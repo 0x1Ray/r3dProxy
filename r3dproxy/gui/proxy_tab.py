@@ -282,6 +282,7 @@ class ProxyTab(QWidget):
         a_rep = menu.addAction("Send to Repeater")
         a_intr = menu.addAction("Send to Intruder")
         a_scan = menu.addAction("Send to Scanner")
+        a_seq = menu.addAction("Send to Sequencer")
         a_ai = menu.addAction("Send to AI Assistant")
         menu.addSeparator()
         a_copyurl = menu.addAction("Copy URL")
@@ -292,6 +293,8 @@ class ProxyTab(QWidget):
             self.main.send_to_intruder(rec)
         elif act == a_scan:
             self.main.send_to_scanner(rec)
+        elif act == a_seq:
+            self.main.send_to_sequencer(rec)
         elif act == a_ai:
             self.main.send_to_ai(rec.request_text, rec.response_text)
         elif act == a_copyurl:

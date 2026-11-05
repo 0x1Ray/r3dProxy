@@ -18,6 +18,7 @@ from .target_tab import TargetTab
 from .repeater_tab import RepeaterTab
 from .intruder_tab import IntruderTab
 from .scanner_tab import ScannerTab
+from .sequencer_tab import SequencerTab
 from .tools_tab import ToolsTab
 from .oast_tab import OASTTab
 from .issues_tab import IssuesTab
@@ -48,6 +49,7 @@ class MainWindow(QMainWindow):
         self.repeater_tab = RepeaterTab(ctx, self)
         self.intruder_tab = IntruderTab(ctx, self)
         self.scanner_tab = ScannerTab(ctx, self)
+        self.sequencer_tab = SequencerTab(ctx, self)
         self.issues_tab = IssuesTab(ctx, self)
         self.tools_tab = ToolsTab(ctx, self)
         self.oast_tab = OASTTab(ctx, self)
@@ -58,6 +60,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.repeater_tab, "Repeater")
         self.tabs.addTab(self.intruder_tab, "Intruder")
         self.tabs.addTab(self.scanner_tab, "Scanner")
+        self.tabs.addTab(self.sequencer_tab, "Sequencer")
         self.tabs.addTab(self.issues_tab, "Issues")
         self.tabs.addTab(self.tools_tab, "Tools")
         self.tabs.addTab(self.oast_tab, "OAST")
@@ -216,6 +219,12 @@ class MainWindow(QMainWindow):
                      tls=(rec.scheme == "https"))
         self.scanner_tab.load(rec.request_text, tgt)
         self.tabs.setCurrentWidget(self.scanner_tab)
+
+    def send_to_sequencer(self, rec):
+        tgt = Target(host=rec.host, port=(443 if rec.scheme == "https" else 80),
+                     tls=(rec.scheme == "https"))
+        self.sequencer_tab.load(rec.request_text, tgt)
+        self.tabs.setCurrentWidget(self.sequencer_tab)
 
     def send_to_ai(self, req_text, resp_text):
         self.ai_tab.load(req_text, resp_text)

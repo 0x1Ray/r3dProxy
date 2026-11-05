@@ -44,6 +44,9 @@ input or payload gets rejected.
   was rejected (WAF, validation, encoding, Content-Type, CSRF, …) and proposes
   ready-to-send variants. One click turns its suggestions into a payload set
   loaded straight into **Intruder** (*Payloads → Intruder*).
+- **Sequencer** — estimate token randomness (session IDs, CSRF/reset tokens):
+  paste tokens or capture one from repeated requests, and get per-position
+  entropy, duplicate/sequence detection and a plain verdict.
 - **Tools** — Decoder/Encoder (URL, Base64, Hex, HTML, JWT) and a response
   **Comparer** (coloured line diff).
 - **OAST** — built-in out-of-band callback listener with token URLs to confirm
