@@ -234,15 +234,30 @@ r3dproxy/
     proxy_engine.py        mitmproxy wrapper + Qt bridge (intercept/forward/drop)
     flowstore.py           in-memory flow store
     httptext.py            raw HTTP <-> editable text
-    sender.py              standalone request sender (Repeater/Intruder)
+    sender.py              standalone request sender (requests-based)
+    raw_sender.py          byte-exact raw-socket sender
+    intruder.py            attack types + grep-extract
+    passive.py             passive audit checks
+    sequencer.py           token randomness analysis
+    codec.py / csrf.py     decoder/comparer + CSRF PoC
     wordlists.py           built-in + user wordlists
-    ai_client.py           Claude analysis
+    oast.py / oast_registry.py   OAST listener + shared callback registry
+    ai_client.py           Claude analysis + payload generation
+    plugins/               scanner plugin framework + 10 OWASP built-ins
   gui/
     main_window.py         window, toolbar, cross-tab actions
-    proxy_tab.py           intercept queue + history
+    proxy_tab.py           intercept queue + history (deep search)
+    target_tab.py          site map tree + scope
     repeater_tab.py        repeater
-    intruder_tab.py        sniper fuzzer + wordlist manager
+    intruder_tab.py        4 attack types, payload sets, grep-extract
+    scanner_tab.py         OWASP scanner
+    sequencer_tab.py       token analysis
+    issues_tab.py          passive issues
+    tools_tab.py           decoder / comparer / CSRF PoC
+    oast_tab.py            OAST listener UI
     ai_tab.py              AI assistant
+    discovery_dialog.py    content discovery
+    proxy_setup_dialog.py  FoxyProxy / CA helper
     settings_dialog.py     settings
     editor.py / theme.py / workers.py
 ```
