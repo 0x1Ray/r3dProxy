@@ -19,6 +19,7 @@ from .intruder_tab import IntruderTab
 from .scanner_tab import ScannerTab
 from .tools_tab import ToolsTab
 from .oast_tab import OASTTab
+from .issues_tab import IssuesTab
 from .ai_tab import AITab
 from .settings_dialog import SettingsDialog
 
@@ -45,6 +46,7 @@ class MainWindow(QMainWindow):
         self.repeater_tab = RepeaterTab(ctx, self)
         self.intruder_tab = IntruderTab(ctx, self)
         self.scanner_tab = ScannerTab(ctx, self)
+        self.issues_tab = IssuesTab(ctx, self)
         self.tools_tab = ToolsTab(ctx, self)
         self.oast_tab = OASTTab(ctx, self)
         self.ai_tab = AITab(ctx, self)
@@ -53,6 +55,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.repeater_tab, "Repeater")
         self.tabs.addTab(self.intruder_tab, "Intruder")
         self.tabs.addTab(self.scanner_tab, "Scanner")
+        self.tabs.addTab(self.issues_tab, "Issues")
         self.tabs.addTab(self.tools_tab, "Tools")
         self.tabs.addTab(self.oast_tab, "OAST")
         self.tabs.addTab(self.ai_tab, "AI Assistant")
@@ -110,6 +113,7 @@ class MainWindow(QMainWindow):
         b.stopped.connect(self.on_stopped)
         b.request_captured.connect(self.proxy_tab.on_request_captured)
         b.response_captured.connect(self.proxy_tab.on_response_captured)
+        b.response_captured.connect(self._on_response_for_issues)
         b.request_intercepted.connect(self.proxy_tab.on_request_intercepted)
         b.flow_error.connect(self.proxy_tab.on_flow_error)
         b.log.connect(lambda m: self.statusBar().showMessage(m, 8000))
@@ -135,6 +139,11 @@ class MainWindow(QMainWindow):
     def on_stopped(self):
         self.proxy_status.setText("  ● proxy: stopped  ")
         self.proxy_status.setStyleSheet(f"color:{theme.FG_DIM};")
+
+    def _on_response_for_issues(self, fid):
+        rec = self.ctx.store.get(fid)
+        if rec:
+            self.issues_tab.audit_record(rec)
 
     def on_intercept_toggled(self, on):
         self.ctx.engine.set_intercept(on)

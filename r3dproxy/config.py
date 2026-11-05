@@ -31,6 +31,8 @@ DEFAULTS = {
     "match_replace": [],
     # OAST
     "oast_base": "",
+    # Passive auditing of proxy traffic
+    "passive_enabled": True,
 }
 
 

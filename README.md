@@ -31,6 +31,10 @@ input or payload gets rejected.
 - **Scanner (OWASP plugins)** — run one-vulnerability-per-plugin checks against a
   single request at a `§…§` point. Ten built-in plugins with PortSwigger-style
   payload variations and per-vuln detection tuned to cut false positives.
+- **Passive auditing (Issues)** — while you browse, every response is checked for
+  missing security headers, weak cookie flags, reflected input, verbose
+  errors/stack traces, version/internal-IP disclosure and risky CORS — surfaced,
+  de-duplicated, in the **Issues** tab.
 - **Raw-socket sender** — byte-exact requests (no header reordering / injection),
   which is what makes CRLF, CORS/Origin and malformed-request tests reliable.
 - **Wordlists** — built-in lightweight lists (XSS, SQLi, LFI, command injection,
