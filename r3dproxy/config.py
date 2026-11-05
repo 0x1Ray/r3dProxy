@@ -39,7 +39,12 @@ DEFAULTS = {
     "passive_enabled": True,
     # Obsidian/notes export
     "obsidian_vault": "",
+    # Local control API (for the browser extension / automation)
+    "api_enabled": True,
+    "api_port": 8777,
 }
+
+API_TOKEN_FILE = CONFIG_DIR / "api_token"
 
 
 class Config:
@@ -94,6 +99,30 @@ class Config:
     def ai_needs_key(self) -> bool:
         from .core.ai_client import PROVIDERS
         return PROVIDERS.get(self.data.get("ai_provider", "ollama"), {}).get("needs_key", True)
+
+
+def api_token() -> str:
+    """Read (or create) the local control-API token."""
+    try:
+        if API_TOKEN_FILE.exists():
+            tok = API_TOKEN_FILE.read_text("utf-8").strip()
+            if tok:
+                return tok
+    except Exception:
+        pass
+    import secrets as _secrets
+    tok = _secrets.token_hex(16)
+    try:
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        API_TOKEN_FILE.write_text(tok, "utf-8")
+        try:
+            import os as _os
+            _os.chmod(API_TOKEN_FILE, 0o600)
+        except Exception:
+            pass
+    except Exception:
+        pass
+    return tok
 
 
 def ensure_dirs():

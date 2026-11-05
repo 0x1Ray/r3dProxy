@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>r3dProxy Companion — settings</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0e0f11; color: #d7dade;
+      max-width: 520px; margin: 40px auto; padding: 0 20px; }
+    h1 { color: #e11d2a; font-size: 20px; }
+    label { display: block; margin: 16px 0 4px; }
+    input { width: 100%; padding: 8px; background: #16181c; color: #d7dade;
+      border: 1px solid #2a2e35; border-radius: 5px; font-family: monospace; }
+    button { margin-top: 16px; padding: 9px 16px; background: #8f1620; color: #fff;
+      border: 1px solid #e11d2a; border-radius: 5px; cursor: pointer; }
+    .muted { color: #8b9096; font-size: 13px; line-height: 1.5; }
+    #msg { margin-top: 12px; font-family: monospace; }
+    code { background: #16181c; padding: 2px 5px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>🦅 r3dProxy Companion</h1>
+  <p class="muted">Point this at your local r3dProxy control API. Get the token from the
+    app's <b>Settings → API</b>, from <code>~/.r3dproxy/api_token</code>, or by running
+    <code>python -m r3dproxy.cli token</code>.</p>
+
+  <label>API base URL</label>
+  <input id="base" placeholder="http://127.0.0.1:8777">
+  <label>API token</label>
+  <input id="token" placeholder="paste token">
+  <br>
+  <button id="save">Save</button>
+  <button id="test">Test connection</button>
+  <div id="msg"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>

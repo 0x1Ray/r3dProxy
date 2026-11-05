@@ -34,6 +34,8 @@ class AppContext:
         self.store = FlowStore()
         from ..core.engagement import EngagementStore
         self.engagement = EngagementStore()
+        self.api_issues = []
+        self.api_seen = set()
         self.engine = ProxyEngine(self.config, self.store)
 
 
@@ -79,7 +81,23 @@ class MainWindow(QMainWindow):
         if self.ctx.config["intercept_enabled"]:
             self.intercept_chk.setChecked(True)
 
+        self.control_api = None
+        self._start_control_api()
         self.start_proxy()
+
+    def _start_control_api(self):
+        if not self.ctx.config.get("api_enabled", True):
+            return
+        try:
+            from ..core.control_api import ControlAPI
+            from .. import config as cfgmod
+            token = cfgmod.api_token()
+            port = int(self.ctx.config.get("api_port", 8777))
+            self.control_api = ControlAPI(self.ctx, token, port=port)
+            self.control_api.start()
+            self.statusBar().showMessage(f"Control API on 127.0.0.1:{port} (for the browser extension)", 6000)
+        except Exception as e:
+            self.statusBar().showMessage(f"Control API not started: {e}", 6000)
 
     # ---------------- toolbar ----------------
     def _build_toolbar(self):
@@ -165,6 +183,13 @@ class MainWindow(QMainWindow):
         rec = self.ctx.store.get(fid)
         if rec:
             self.issues_tab.audit_record(rec)
+            # also feed the control API's issue list (for the extension's /issues)
+            if self.ctx.config.get("passive_enabled", True):
+                try:
+                    from ..core.control_api import accumulate_passive
+                    accumulate_passive(self.ctx, rec.request_text, rec.response_text, rec.url)
+                except Exception:
+                    pass
 
     def on_intercept_toggled(self, on):
         self.ctx.engine.set_intercept(on)
@@ -277,6 +302,8 @@ class MainWindow(QMainWindow):
         try:
             self.ctx.config.save()
             self.ctx.engine.stop()
+            if self.control_api:
+                self.control_api.stop()
         except Exception:
             pass
         super().closeEvent(ev)

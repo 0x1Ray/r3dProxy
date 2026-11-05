@@ -14,7 +14,8 @@ Obsidian reporting, with a **local, free AI** assistant built in.
 [![Platform: Linux](https://img.shields.io/badge/platform-Linux-111.svg)](#)
 [![Built with PySide6](https://img.shields.io/badge/GUI-PySide6-41cd52.svg)](https://doc.qt.io/qtforpython/)
 
-[Features](#-features) · [Quick start](#-quick-start) · [AI setup](#-ai-assistant-required) ·
+[Features](#-features) · [Quick start](#-quick-start) · [Browser extension](#-browser-extension-live-companion) ·
+[Headless / CLI](#-headless-mode--cli) · [AI setup](#-ai-assistant-required) ·
 [Recon tools](#-external-recon-tools) · [Obsidian export](#-engagement-notes-obsidian) ·
 [Scanner](#-scanner--owasp-plugins)
 
@@ -43,7 +44,9 @@ data leaves your machine and no API key is required.
 | **Repeater** | Multi-tab edit/resend, response viewer, optional **raw-socket** mode, one-click → AI |
 | **Intruder** | Four attack types (**sniper · battering ram · pitchfork · cluster bomb**), multi-position payload sets, wordlists, **grep-extract** into a sortable column |
 | **Scanner** | **10 OWASP plugins** with PortSwigger-style payloads and FP-reducing detection; extensible with your own plugins |
-| **Issues** | **Passive auditing** while you browse: security headers, cookie flags, reflected input, stack traces, info disclosure, risky CORS |
+| **Issues** | **Passive auditing** while you browse: security headers, cookie flags, reflected input, stack traces, info disclosure, risky CORS, and **leaked secrets** (AWS/Google/GitHub/Stripe/JWT/DB strings) in responses & JS |
+| **Browser extension** | A Chrome/Firefox companion that runs secrets/passive/active scans, recon and intercept on the current page **without opening the app** |
+| **Headless + API** | Run the proxy + a token-auth local control API with no GUI (`r3dproxy.cli serve`); a CLI for one-off `scan` / `secrets` / `passive` |
 | **Sequencer** | Token randomness analysis (entropy, duplicates, sequence & encoding detection) |
 | **OAST** | Out-of-band callback listener to confirm **blind** SSRF/XXE/RCE — auto-used by the Scanner to upgrade findings to *Firm* |
 | **Recon** | Drives real Linux tools: **nmap, nikto, nuclei, whatweb, wafw00f, httpx, ffuf, gobuster, feroxbuster, subfinder, amass, assetfinder…** |
@@ -140,6 +143,49 @@ Covered: **scanners** (nmap, nikto, nuclei, whatweb, wafw00f, httpx, testssl,
 wpscan), **directory fuzzing** (ffuf, gobuster, feroxbuster, dirb, wfuzz,
 dirsearch), **subdomain discovery** (subfinder, amass, assetfinder, findomain,
 sublist3r).
+
+## 🧩 Browser extension (live companion)
+
+A Chromium/Firefox extension (in [`extension/`](extension/)) lets you use
+r3dProxy's live checks **while browsing your scope, without opening the app**. It
+talks to the local control API (below).
+
+**Load it**
+- **Chrome/Edge/Brave:** `chrome://extensions` → enable Developer mode → *Load
+  unpacked* → pick the `extension/` folder.
+- **Firefox:** `about:debugging#/runtime/this-firefox` → *Load Temporary Add-on*
+  → pick `extension/manifest.json`.
+
+**Connect it:** open the extension's **settings**, set the API base
+(`http://127.0.0.1:8777`) and paste the token from the app's **Proxy setup**
+dialog (or `python -m r3dproxy.cli token`).
+
+**On the current page you can:** add its host to scope · toggle intercept ·
+scan the page for **leaked secrets** · run a **passive** audit · pick a query
+parameter and **active-scan** it · enumerate **subdomains**. Results show right
+in the popup. The r3dProxy app (or `serve`) must be running.
+
+## ⌨ Headless mode & CLI
+
+Drive r3dProxy without the GUI — ideal for servers, automation, or as the
+backend for the extension:
+
+```bash
+# proxy + control API, no window (Ctrl-C to stop)
+python -m r3dproxy.cli serve --port 8777 --proxy-port 8080
+
+# one-off checks
+python -m r3dproxy.cli secrets https://target.com/app.js
+python -m r3dproxy.cli passive https://target.com/
+python -m r3dproxy.cli scan "https://target.com/p?id=1" --param id --plugins xss,sqli --json
+python -m r3dproxy.cli tools --list        # external-tool status
+python -m r3dproxy.cli token               # the control-API token
+```
+
+The **control API** (token-authed, bound to `127.0.0.1`) is what the extension
+and your own scripts call: `GET /health`, `/scope`, `/intercept`, `/history`,
+`/issues`; `POST /secrets`, `/passive`, `/scan`, `/run`, `/scope`, `/intercept`.
+All non-`/health` calls require the `X-r3d-Token` header.
 
 ## 🗂 Engagement notes (Obsidian)
 
@@ -274,7 +320,11 @@ r3dproxy/
     assets.py              asset correlation (domains/subdomains/IPs)
     engagement.py          Obsidian/Markdown export
     ai_client.py           pluggable AI (Ollama/OpenAI-compatible/Claude)
+    secrets.py             secret/credential + hidden-text detection
+    control_api.py         local token-auth HTTP API (drives the extension)
     plugins/               scanner plugin framework + 10 OWASP built-ins
+  cli.py                   headless: serve / scan / secrets / passive / tools
+extension/                 Chrome + Firefox companion (MV3)
   gui/
     main_window.py         window, toolbar, cross-tab actions
     proxy_tab.py           intercept queue + history (deep search)

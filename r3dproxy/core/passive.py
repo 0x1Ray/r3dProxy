@@ -7,6 +7,7 @@ from typing import List
 from urllib.parse import urlparse, parse_qs
 
 from . import httptext
+from . import secrets as secrets_mod
 
 HIGH, MEDIUM, LOW, INFO = "High", "Medium", "Low", "Info"
 SEV_ORDER = {HIGH: 0, MEDIUM: 1, LOW: 2, INFO: 3}
@@ -112,6 +113,16 @@ def audit(request_text: str, response_text: str, url: str) -> List[Issue]:
     if acao == "*" and acac == "true":
         add("CORS: wildcard origin with credentials", MEDIUM, "Firm",
             "Access-Control-Allow-Origin: * together with credentials=true.")
+
+    # ---- secrets / credential exposure (also on JS and other static assets) ----
+    if resp_body:
+        for hit in secrets_mod.scan(resp_body[:400000]):
+            sev = HIGH if hit.severity == "High" else (MEDIUM if hit.severity == "Medium" else LOW)
+            add(f"Secret exposure: {hit.name}", sev, "Firm",
+                f"Leaked credential in response ({hit.redacted}). Context: …{hit.snippet}…")
+        if secrets_mod.hidden_text(resp_body):
+            add("Hidden / zero-width text in response", INFO, "Tentative",
+                "Response contains zero-width or bidi-override characters (possible hidden content).")
 
     # ---- body-based checks (skip static assets) ----
     if not is_static and resp_body:

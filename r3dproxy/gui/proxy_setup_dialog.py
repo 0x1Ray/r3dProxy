@@ -76,6 +76,27 @@ class ProxySetupDialog(QDialog):
         cv.addWidget(exca)
         v.addWidget(ca)
 
+        # --- browser extension / control API ---
+        ext = QGroupBox("Browser extension (live companion)")
+        ev = QVBoxLayout(ext)
+        from .. import config as cfgmod
+        port = int(ctx.config.get("api_port", 8777))
+        token = cfgmod.api_token()
+        ev.addWidget(QLabel("Load the extension from the repo's extension/ folder "
+                            "(Chrome: chrome://extensions → Load unpacked; Firefox: "
+                            "about:debugging → Load Temporary Add-on), then in its settings set:"))
+        base_row = QHBoxLayout()
+        base_field = QLineEdit(f"http://127.0.0.1:{port}"); base_field.setReadOnly(True)
+        cb1 = QPushButton("Copy"); cb1.clicked.connect(lambda: self._copy(base_field.text()))
+        base_row.addWidget(QLabel("API:")); base_row.addWidget(base_field, 1); base_row.addWidget(cb1)
+        ev.addLayout(base_row)
+        tok_row = QHBoxLayout()
+        tok_field = QLineEdit(token); tok_field.setReadOnly(True)
+        cb2 = QPushButton("Copy token"); cb2.clicked.connect(lambda: self._copy(token))
+        tok_row.addWidget(QLabel("Token:")); tok_row.addWidget(tok_field, 1); tok_row.addWidget(cb2)
+        ev.addLayout(tok_row)
+        v.addWidget(ext)
+
         bar = QHBoxLayout(); bar.addStretch(1)
         close = QPushButton("Close"); close.clicked.connect(self.accept)
         bar.addWidget(close); v.addLayout(bar)
