@@ -1,0 +1,4 @@
+mitmproxy>=12.0,<13
+PySide6>=6.6
+requests>=2.31
+anthropic>=0.40

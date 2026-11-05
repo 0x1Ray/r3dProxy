@@ -1,0 +1,209 @@
+# r3dProxy
+
+An AI-assisted intercepting web proxy with a GUI — a lightweight, hackable
+alternative to Burp Suite for **authorized** web application security testing
+(bug bounty / pentests you have permission to run).
+
+Built on [mitmproxy](https://mitmproxy.org/) (proxy engine + TLS CA) and
+[PySide6](https://doc.qt.io/qtforpython/) (GUI), with an Claude-powered
+assistant that analyzes a response and suggests how to modify a request when an
+input or payload gets rejected.
+
+> Use it only against systems you own or are explicitly authorized to test.
+
+## Features
+
+- **Intercepting proxy** (HTTP + HTTPS via an auto-generated CA).
+- **Intercept queue** — pause requests, edit them freely, then Forward / Drop /
+  Forward-all.
+- **HTTP history** — searchable table with request/response viewers, colored
+  status codes, right-click → send to Repeater / Intruder / Scanner / AI.
+- **Repeater** — multi-tab; edit a request and resend it, inspect the response,
+  one click to the AI assistant. Optional **raw-socket** mode.
+- **Intruder (sniper)** — mark one injection point with `§…§`, run a payload
+  list, and compare status/length/time per payload. Optional raw-socket mode.
+- **Scanner (OWASP plugins)** — run one-vulnerability-per-plugin checks against a
+  single request at a `§…§` point. Ten built-in plugins with PortSwigger-style
+  payload variations and per-vuln detection tuned to cut false positives.
+- **Raw-socket sender** — byte-exact requests (no header reordering / injection),
+  which is what makes CRLF, CORS/Origin and malformed-request tests reliable.
+- **Wordlists** — built-in lightweight lists (XSS, SQLi, LFI, command injection,
+  SSTI, SSRF/redirect, fuzz chars, …) plus your own, added from the GUI or the
+  terminal.
+- **AI assistant** — paste/send a request + response; Claude diagnoses *why* it
+  was rejected (WAF, validation, encoding, Content-Type, CSRF, …) and proposes
+  ready-to-send variants. One click turns its suggestions into a payload set
+  loaded straight into **Intruder** (*Payloads → Intruder*).
+- **Tools** — Decoder/Encoder (URL, Base64, Hex, HTML, JWT) and a response
+  **Comparer** (coloured line diff).
+- **OAST** — built-in out-of-band callback listener with token URLs to confirm
+  blind SSRF/XXE/RCE/SQLi; set a public base URL (VPS / interactsh) for internet
+  callbacks.
+- **Sessions** — save/restore HTTP history and Repeater tabs to JSON.
+- **Reports** — export Scanner findings to Markdown or JSON for write-ups.
+- **Match & Replace** — regex rules auto-rewriting requests/responses.
+- **Scope** — restrict interception to chosen hosts.
+- **Extensible** — drop your own wordlists and scanner plugins into
+  `~/.r3dproxy/`.
+- **Dark "hawk" theme.**
+
+## Scanner — OWASP plugins
+
+Open the **Scanner** tab (or right-click a request in history → *Send to
+Scanner*), wrap the value you want to test in `§…§`, tick the plugins to run,
+and **Scan**. Findings show plugin, OWASP category, confidence
+(Firm/High/Tentative/Info), the injection point and the evidence; click one to
+see the exact request/response, or right-click to push it to Repeater/AI.
+
+| Plugin | OWASP (2021) | Detection |
+|---|---|---|
+| SQL Injection | A03 Injection | DB error signatures, boolean TRUE/FALSE diff vs baseline, confirmed time-based |
+| Cross-Site Scripting | A03 Injection | unique-token reflection with metachars surviving unencoded in an HTML response |
+| OS Command Injection | A03 Injection | confirmed time-based across shell separators |
+| Server-Side Template Injection | A03 Injection | arithmetic eval (e.g. `1337*7`→`9359`) absent from baseline |
+| Path Traversal / LFI | A01 Broken Access Control | `/etc/passwd` and `win.ini` signatures, encoding bypasses |
+| SSRF | A10 SSRF | cloud-metadata/internal signatures; else flagged Tentative for OAST confirmation |
+| XXE | A05 Misconfiguration | external-entity file read returned in the response |
+| Open Redirect | A01 Broken Access Control | off-site `Location` host with filter-bypass variants |
+| CRLF / Header Injection | A03 Injection | injected header/cookie actually appears in the response |
+| CORS Misconfiguration | A05 Misconfiguration | `ACAO` reflects attacker `Origin`, worse with `credentials:true` |
+
+Detection runs a baseline and a benign control probe first, requires timing
+findings to be confirmed, and compares against the baseline — so a slow endpoint
+or an error page that already existed won't light up as a bug. SSRF stays
+Tentative unless an internal signature leaks, because it genuinely needs an
+out-of-band (Collaborator-style) host to confirm.
+
+### Write your own plugin
+
+Drop a `.py` file in `~/.r3dproxy/plugins/` that defines `plugin = YourPlugin()`
+(or `PLUGINS = [...]`). A `plugin_template.py` is included in the repo:
+
+```python
+from r3dproxy.core.plugins.base import Plugin, Case, sub_marker, point_label, FIRM
+
+class MyCheck(Plugin):
+    id = "mycheck"; name = "My Check"; owasp = "A03:2021 Injection"
+    description = "what it tests"
+    def build_cases(self, base_text, marker):
+        return [Case("probe", sub_marker(base_text, "PAYLOAD"), "PAYLOAD")]
+    def detect(self, case, resp, engine):
+        if resp.ok and "signature" in resp.body:
+            return self._finding(case, resp, FIRM, "found signature", point_label(engine.base_text))
+
+plugin = MyCheck()
+```
+
+## Install
+
+Requires Python 3.10+.
+
+```bash
+cd r3dproxy
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python run.py
+```
+
+On Linux you may also need the Qt runtime libs (usually pulled in by PySide6).
+If the window fails to start with an `xcb` plugin error, install your distro's
+`libxcb` packages (e.g. `sudo apt install libxcb-cursor0`).
+
+## HTTPS interception — install the CA
+
+1. Start r3dProxy once and send one HTTPS request through it so the CA is
+   generated at `~/.r3dproxy/ca/mitmproxy-ca-cert.pem`.
+2. Point your browser/system at the proxy (default `127.0.0.1:8080`). FoxyProxy
+   or your OS network settings both work.
+3. Trust the CA:
+   - **Firefox:** Settings → Privacy & Security → Certificates → View
+     Certificates → Authorities → Import → select the `.pem` → trust for
+     websites.
+   - **System (Debian/Ubuntu):**
+     ```bash
+     sudo cp ~/.r3dproxy/ca/mitmproxy-ca-cert.pem \
+        /usr/local/share/ca-certificates/r3dproxy.crt
+     sudo update-ca-certificates
+     ```
+   - Or use **Settings → CA cert → Export** inside the app.
+
+## AI assistant setup
+
+The assistant uses the Anthropic API. Provide a key via the environment
+(preferred):
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+python run.py
+```
+
+Or paste a key under **Settings → AI**. Set the model there too — the default is
+`claude-sonnet-4-5`; change it to whatever model id your account uses. No key
+is required for the proxy/repeater/intruder features; only the AI tab needs one.
+
+## Wordlists
+
+Built-in lists ship inside the app (shown with a ★ in the Intruder wordlist
+dropdown). Your own lists live as plain `.txt` files (one payload per line,
+`#` comments and blank lines ignored) under:
+
+```
+~/.r3dproxy/wordlists/
+```
+
+Add them two ways:
+
+- **GUI:** Intruder tab → *Import…* (copies a file in), or *Save as…* (saves the
+  current payload box as a reusable list). They appear with a ◆ prefix.
+- **Terminal:** just drop files into the folder and hit the ⟳ button:
+  ```bash
+  mkdir -p ~/.r3dproxy/wordlists
+  cp /path/to/SecLists/Fuzzing/XSS/XSS-Jhaddix.txt ~/.r3dproxy/wordlists/
+  ```
+
+## Typical workflow
+
+1. Proxy your browser through r3dProxy, browse the target.
+2. Find an interesting request in **HTTP history** → right-click → **Send to
+   Repeater**.
+3. Try a payload. If it's rejected (403, 400, validation error), click **→ AI**
+   to get bypass suggestions.
+4. Turn a suggestion into a **§…§** marker in **Intruder**, load a wordlist, and
+   fire the whole set to see which variant passes.
+
+## Layout
+
+```
+run.py                     launcher
+r3dproxy/
+  config.py                settings (~/.r3dproxy/settings.json)
+  core/
+    proxy_engine.py        mitmproxy wrapper + Qt bridge (intercept/forward/drop)
+    flowstore.py           in-memory flow store
+    httptext.py            raw HTTP <-> editable text
+    sender.py              standalone request sender (Repeater/Intruder)
+    wordlists.py           built-in + user wordlists
+    ai_client.py           Claude analysis
+  gui/
+    main_window.py         window, toolbar, cross-tab actions
+    proxy_tab.py           intercept queue + history
+    repeater_tab.py        repeater
+    intruder_tab.py        sniper fuzzer + wordlist manager
+    ai_tab.py              AI assistant
+    settings_dialog.py     settings
+    editor.py / theme.py / workers.py
+```
+
+## Notes & roadmap ideas
+
+- Repeater/Intruder default to the `requests` sender (robust); tick **raw
+  socket** for byte-exact control. The Scanner always uses the raw sender.
+- No persistent session save yet (history is in-memory per run).
+- HTTP/2 flows are captured; editing is done at the HTTP/1 text level.
+- SSRF/OAST: wiring in a Collaborator-style callback host would upgrade several
+  Tentative checks to Firm.
+
+## License
+
+MIT — see `LICENSE`. Test only systems you own or are explicitly authorized to
+assess.
