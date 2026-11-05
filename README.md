@@ -52,7 +52,7 @@ data leaves your machine and no API key is required.
 | **Recon** | Drives real Linux tools: **nmap, nikto, nuclei, whatweb, wafw00f, httpx, ffuf, gobuster, feroxbuster, subfinder, amass, assetfinder…** |
 | **Tools** | Decoder/Encoder (URL/Base64/Hex/HTML/JWT, pretty JSON/XML), response **Comparer**, **CSRF PoC** generator |
 | **AI** | Pluggable assistant — **local Qwen (Ollama) by default**, or any OpenAI-compatible provider / Claude; suggests payloads straight into Intruder |
-| **Reporting** | **Obsidian export**: one cross-linked note per asset (domain/subdomain/IP) with ports, tech, paths, findings — plus Markdown/JSON finding reports |
+| **Reporting** | **Obsidian export**: one cross-linked note per asset (domain/subdomain/IP) with ports, tech, paths, findings — plus Markdown / JSON / **SARIF** reports, stable finding **fingerprints** + baseline diff, and SHA-256 **evidence packs** |
 | **Workflow** | Match & Replace, scope, session save/load, built-in + user wordlists, dark *hawk* theme |
 
 ## 📸 Screenshots

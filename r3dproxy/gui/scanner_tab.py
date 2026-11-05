@@ -265,13 +265,20 @@ class ScannerTab(QWidget):
         from ..core import report
         path, flt = QFileDialog.getSaveFileName(
             self, "Export findings", "r3dproxy-findings.md",
-            "Markdown (*.md);;JSON (*.json)")
+            "Markdown (*.md);;JSON (*.json);;SARIF (*.sarif);;Evidence pack (folder) (*)")
         if not path:
             return
         try:
             tgt = self.current_target()
             target = f"{tgt.scheme}://{tgt.host}:{tgt.port}"
-            if path.endswith(".json") or "json" in flt.lower():
+            low = (path + " " + flt).lower()
+            if "evidence" in low:
+                out = report.evidence_pack(self._findings, path.rsplit(".", 1)[0] + "_evidence", target)
+                self.status.setText(f"evidence pack → {out}")
+                return
+            if path.endswith(".sarif") or "sarif" in flt.lower():
+                data = report.findings_to_sarif(self._findings, target)
+            elif path.endswith(".json") or "json" in flt.lower():
                 data = report.findings_to_json(self._findings)
             else:
                 data = report.findings_to_markdown(self._findings, target)

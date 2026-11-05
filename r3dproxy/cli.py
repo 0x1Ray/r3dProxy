@@ -92,23 +92,23 @@ def cmd_scan(args):
     cfg = config_mod.Config()
     oast = (cfg.get("oast_base") or "").strip() or None
     plugins = args.plugins.split(",") if args.plugins else ["xss", "lfi", "ssti", "openredirect", "crlf", "cors"]
-    out = []
+    findings = []
     for pid in plugins:
         try:
             eng = ScanEngine(req, target, timeout=12, oast_base=oast)
             eng.prepare()
-            for f in get_plugin(pid).run(eng):
-                out.append({"plugin": f.plugin_id, "name": f.name, "owasp": f.owasp,
-                            "confidence": f.confidence, "point": f.point,
-                            "payload": f.payload, "evidence": f.evidence})
+            findings.extend(get_plugin(pid).run(eng))
         except Exception as e:
             print(f"[{pid} error] {e}", file=sys.stderr)
-    if args.json:
-        print(json.dumps(out, indent=2))
+    from .core import report
+    if args.sarif:
+        print(report.findings_to_sarif(findings, target.base()))
+    elif args.json:
+        print(report.findings_to_json(findings))
     else:
-        for f in out:
-            print(f"[{f['confidence']}] {f['name']} ({f['owasp']}) — {f['evidence']}")
-        if not out:
+        for f in findings:
+            print(f"[{f.confidence}] {f.name} ({f.owasp}) — {f.evidence}")
+        if not findings:
             print("no findings")
 
 
@@ -182,6 +182,7 @@ def main(argv=None):
     s.add_argument("--param", required=True)
     s.add_argument("--plugins", default="")
     s.add_argument("--json", action="store_true")
+    s.add_argument("--sarif", action="store_true")
     s.set_defaults(func=cmd_scan)
 
     s = sub.add_parser("secrets", help="scan a URL/file for leaked secrets")
