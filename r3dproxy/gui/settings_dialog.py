@@ -49,18 +49,43 @@ class SettingsDialog(QDialog):
         return w
 
     def _ai_tab(self):
+        from ..core.ai_client import PROVIDERS
         w = QWidget(); f = QFormLayout(w)
+        self.ai_provider = QComboBox()
+        for pid, p in PROVIDERS.items():
+            self.ai_provider.addItem(p["label"], pid)
+        cur = self.ctx.config.get("ai_provider", "ollama")
+        i = self.ai_provider.findData(cur)
+        if i >= 0:
+            self.ai_provider.setCurrentIndex(i)
+        self.ai_provider.currentIndexChanged.connect(self._on_provider)
+        self.ai_base = QLineEdit(self.ctx.config.get("ai_base_url", ""))
+        self.ai_base.setPlaceholderText("e.g. http://localhost:11434/v1  or  https://openrouter.ai/api/v1")
         self.ai_model = QLineEdit(self.ctx.config["ai_model"])
         self.ai_tokens = QSpinBox(); self.ai_tokens.setRange(256, 8192)
         self.ai_tokens.setValue(int(self.ctx.config["ai_max_tokens"]))
         self.ai_key = QLineEdit(self.ctx.config["ai_api_key"])
         self.ai_key.setEchoMode(QLineEdit.Password)
-        self.ai_key.setPlaceholderText("overridden by ANTHROPIC_API_KEY env var if set")
+        self.ai_key.setPlaceholderText("env ANTHROPIC_API_KEY / R3DPROXY_AI_KEY / OPENAI_API_KEY override this")
+        f.addRow("Provider", self.ai_provider)
+        f.addRow("Base URL", self.ai_base)
         f.addRow("Model", self.ai_model)
         f.addRow("Max tokens", self.ai_tokens)
         f.addRow("API key", self.ai_key)
-        f.addRow(QLabel("Prefer the ANTHROPIC_API_KEY environment variable over storing a key here."))
+        f.addRow(QLabel("Default is Ollama (local, free): run `ollama pull qwen2.5` and `ollama serve`.\n"
+                        "Any OpenAI-compatible endpoint works (OpenRouter, Groq, LM Studio…).\n"
+                        "Prefer an env var over storing a key here."))
         return w
+
+    def _on_provider(self):
+        from ..core.ai_client import PROVIDERS
+        pid = self.ai_provider.currentData()
+        p = PROVIDERS.get(pid, {})
+        # only overwrite base/model when switching to a preset with defaults
+        if p.get("base_url"):
+            self.ai_base.setText(p["base_url"])
+        if p.get("model"):
+            self.ai_model.setText(p["model"])
 
     def _sender_tab(self):
         w = QWidget(); f = QFormLayout(w)
@@ -126,6 +151,8 @@ class SettingsDialog(QDialog):
         c["listen_host"] = self.listen_host.text().strip() or "127.0.0.1"
         c["listen_port"] = self.listen_port.value()
         c["scope"] = [s.strip() for s in self.scope.toPlainText().splitlines() if s.strip()]
+        c["ai_provider"] = self.ai_provider.currentData()
+        c["ai_base_url"] = self.ai_base.text().strip()
         c["ai_model"] = self.ai_model.text().strip()
         c["ai_max_tokens"] = self.ai_tokens.value()
         c["ai_api_key"] = self.ai_key.text().strip()

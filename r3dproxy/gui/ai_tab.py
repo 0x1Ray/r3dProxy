@@ -23,6 +23,7 @@ class AITab(QWidget):
         info = QLabel(
             "Paste or send a request/response here. The assistant explains why the "
             "input/payload was likely rejected and proposes variants to try. "
+            "Provider is configurable in Settings → AI (default: local Ollama/Qwen, free). "
             "For use on targets you are authorized to test.")
         info.setWordWrap(True)
         info.setStyleSheet("color:#8b9096;")
@@ -81,17 +82,17 @@ class AITab(QWidget):
         if not req:
             self.output.setPlainText("Add a request first.")
             return
-        key = self.ctx.config.api_key()
-        if not key:
+        if self.ctx.config.ai_needs_key() and not self.ctx.config.api_key():
+            cfg = self.ctx.config.ai_config()
             self.output.setMarkdown(
-                "**No API key.** Set `ANTHROPIC_API_KEY` in your environment, or add "
-                "a key under **Settings**.")
+                f"**No API key** for provider `{cfg['provider']}`. Add one in "
+                "**Settings → AI**, or switch to a local provider like **Ollama** "
+                "(free, no key).")
             return
         self.analyze_btn.setEnabled(False)
         self.output.setPlainText("Analyzing…")
-        self.worker = AIWorker(
-            req, self.resp_edit.text(), self.note.text(),
-            key, self.ctx.config["ai_model"], int(self.ctx.config["ai_max_tokens"]))
+        self.worker = AIWorker(req, self.resp_edit.text(), self.note.text(),
+                               self.ctx.config.ai_config())
         self.worker.done.connect(self.on_done)
         self.worker.failed.connect(self.on_failed)
         self.worker.start()
@@ -113,15 +114,15 @@ class AITab(QWidget):
         if not req:
             self.output.setPlainText("Add a request first.")
             return
-        key = self.ctx.config.api_key()
-        if not key:
-            self.output.setMarkdown("**No API key.** Set `ANTHROPIC_API_KEY` or add one in Settings.")
+        if self.ctx.config.ai_needs_key() and not self.ctx.config.api_key():
+            self.output.setMarkdown(
+                "**No API key** for the selected provider. Add one in Settings → AI, "
+                "or switch to a local provider like Ollama (no key).")
             return
         self.payloads_btn.setEnabled(False)
         self.output.setPlainText("Generating payloads…")
-        self._pworker = AIPayloadWorker(
-            req, self.resp_edit.text(), self.note.text(),
-            key, self.ctx.config["ai_model"], 1200)
+        self._pworker = AIPayloadWorker(req, self.resp_edit.text(), self.note.text(),
+                                        self.ctx.config.ai_config())
         self._pworker.done.connect(self.on_payloads)
         self._pworker.failed.connect(self.on_failed_payloads)
         self._pworker.start()

@@ -41,10 +41,11 @@ input or payload gets rejected.
 - **Wordlists** — built-in lightweight lists (XSS, SQLi, LFI, command injection,
   SSTI, SSRF/redirect, fuzz chars, …) plus your own, added from the GUI or the
   terminal.
-- **AI assistant** — paste/send a request + response; Claude diagnoses *why* it
-  was rejected (WAF, validation, encoding, Content-Type, CSRF, …) and proposes
-  ready-to-send variants. One click turns its suggestions into a payload set
-  loaded straight into **Intruder** (*Payloads → Intruder*).
+- **AI assistant (pluggable, free by default)** — diagnoses *why* a request was
+  rejected (WAF, validation, encoding, Content-Type, CSRF, …) and proposes
+  ready-to-send variants; one click loads them into **Intruder**. Default is
+  **Ollama + Qwen** (local, free, no key); any OpenAI-compatible provider
+  (OpenRouter, Groq, LM Studio, OpenAI) or Anthropic/Claude can be selected.
 - **Sequencer** — estimate token randomness (session IDs, CSRF/reset tokens):
   paste tokens or capture one from repeated requests, and get per-position
   entropy, duplicate/sequence detection and a plain verdict.
@@ -223,17 +224,26 @@ Obsidian (or any Markdown editor).
 
 ## AI assistant setup
 
-The assistant uses the Anthropic API. Provide a key via the environment
-(preferred):
+The AI is **pluggable** and defaults to a **free, local** provider — no key, no
+cloud. Only the AI tab uses it; everything else works without it.
 
+**Default — Ollama + Qwen (free, local, private):**
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-python run.py
+# install Ollama from https://ollama.com, then:
+ollama pull qwen2.5
+ollama serve
 ```
+r3dProxy talks to `http://localhost:11434/v1` out of the box.
 
-Or paste a key under **Settings → AI**. Set the model there too — the default is
-`claude-sonnet-4-5`; change it to whatever model id your account uses. No key
-is required for the proxy/repeater/intruder features; only the AI tab needs one.
+**Other providers** (Settings → AI → Provider):
+- *Qwen free (OpenRouter)* — `https://openrouter.ai/api/v1`, needs a free key
+- *Groq* — fast free tier
+- *OpenAI-compatible (custom)* — set any base URL + model (LM Studio, vLLM, …)
+- *Anthropic (Claude)* — set a `claude-*` model
+
+Keys are read from the environment first (`ANTHROPIC_API_KEY` for Claude,
+otherwise `R3DPROXY_AI_KEY` / `OPENAI_API_KEY`) and can also be stored in
+Settings. Local providers like Ollama need no key.
 
 ## Wordlists
 

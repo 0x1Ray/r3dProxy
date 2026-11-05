@@ -77,19 +77,14 @@ class AIWorker(QThread):
     done = Signal(str)
     failed = Signal(str)
 
-    def __init__(self, request_text, response_text, note, api_key, model, max_tokens):
+    def __init__(self, request_text, response_text, note, cfg):
         super().__init__()
         self.args = (request_text, response_text, note)
-        self.api_key = api_key
-        self.model = model
-        self.max_tokens = max_tokens
+        self.cfg = cfg
 
     def run(self):
         try:
-            out = ai_client.analyze(
-                *self.args, api_key=self.api_key, model=self.model,
-                max_tokens=self.max_tokens,
-            )
+            out = ai_client.analyze(*self.args, **self.cfg)
             self.done.emit(out)
         except Exception as e:
             self.failed.emit(str(e))
@@ -99,19 +94,14 @@ class AIPayloadWorker(QThread):
     done = Signal(list)
     failed = Signal(str)
 
-    def __init__(self, request_text, response_text, note, api_key, model, max_tokens):
+    def __init__(self, request_text, response_text, note, cfg):
         super().__init__()
         self.args = (request_text, response_text, note)
-        self.api_key = api_key
-        self.model = model
-        self.max_tokens = max_tokens
+        self.cfg = cfg
 
     def run(self):
         try:
-            payloads = ai_client.suggest_payloads(
-                *self.args, api_key=self.api_key, model=self.model,
-                max_tokens=self.max_tokens,
-            )
+            payloads = ai_client.suggest_payloads(*self.args, **self.cfg)
             self.done.emit(payloads)
         except Exception as e:
             self.failed.emit(str(e))

@@ -16,10 +16,14 @@ DEFAULTS = {
     "intercept_enabled": False,
     # Only intercept requests whose host matches the scope (empty = all).
     "scope": [],
-    # AI / Claude
-    "ai_model": "claude-sonnet-4-5",
+    # AI — provider-agnostic. Default is free & local (Ollama + Qwen).
+    # provider ids: ollama | openrouter-qwen | groq | openai | anthropic
+    "ai_provider": "ollama",
+    "ai_base_url": "http://localhost:11434/v1",
+    "ai_model": "qwen2.5",
     "ai_max_tokens": 1500,
-    # The key is read from the env var ANTHROPIC_API_KEY first; this is a fallback.
+    # Fallback key (prefer env vars: ANTHROPIC_API_KEY for Claude, else
+    # R3DPROXY_AI_KEY / OPENAI_API_KEY).
     "ai_api_key": "",
     # Sender (Repeater / Intruder)
     "sender_timeout": 20,
@@ -70,7 +74,26 @@ class Config:
         return self.data.get(k, DEFAULTS.get(k, default))
 
     def api_key(self) -> str:
-        return os.environ.get("ANTHROPIC_API_KEY", "") or self.data.get("ai_api_key", "")
+        """Resolve the AI key for the current provider (env first)."""
+        provider = self.data.get("ai_provider", "ollama")
+        if provider == "anthropic":
+            return os.environ.get("ANTHROPIC_API_KEY", "") or self.data.get("ai_api_key", "")
+        return (os.environ.get("R3DPROXY_AI_KEY", "")
+                or os.environ.get("OPENAI_API_KEY", "")
+                or self.data.get("ai_api_key", ""))
+
+    def ai_config(self) -> dict:
+        return {
+            "provider": self.data.get("ai_provider", "ollama"),
+            "base_url": self.data.get("ai_base_url", ""),
+            "model": self.data.get("ai_model", ""),
+            "api_key": self.api_key(),
+            "max_tokens": int(self.data.get("ai_max_tokens", 1500)),
+        }
+
+    def ai_needs_key(self) -> bool:
+        from .core.ai_client import PROVIDERS
+        return PROVIDERS.get(self.data.get("ai_provider", "ollama"), {}).get("needs_key", True)
 
 
 def ensure_dirs():

@@ -1,4 +1,6 @@
 mitmproxy>=12.0,<13
 PySide6>=6.6
 requests>=2.31
+# Optional — only the Anthropic/Claude AI provider uses this SDK; all other
+# providers (Ollama, OpenRouter, Groq, OpenAI-compatible) use `requests`.
 anthropic>=0.40
