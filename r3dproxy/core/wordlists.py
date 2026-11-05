@@ -175,6 +175,26 @@ def import_file(src_path: str) -> str:
     return f"user:{dest.stem}"
 
 
+def materialize(name: str) -> str:
+    """Return a filesystem path for a wordlist (writing built-ins to disk).
+
+    External tools (ffuf/gobuster/…) need a real file; built-in lists are
+    written to ~/.r3dproxy/wordlists/_materialized/<name>.txt on demand."""
+    if name.startswith("user:"):
+        return str(WORDLIST_DIR / f"{name.split(':', 1)[1]}.txt")
+    if name.startswith("builtin:"):
+        key = name.split(":", 1)[1]
+        dest_dir = WORDLIST_DIR / "_materialized"
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest = dest_dir / f"{key}.txt"
+        try:
+            dest.write_text("\n".join(BUILTIN.get(key, [])) + "\n", "utf-8")
+        except Exception:
+            pass
+        return str(dest)
+    return name  # assume it's already a path
+
+
 def save_user(name: str, payloads: List[str]) -> str:
     ensure_dir()
     safe = "".join(c for c in name if c.isalnum() or c in "-_") or "custom"

@@ -206,6 +206,9 @@ class ContentDiscoveryDialog(QDialog):
     def add_to_map(self):
         from ..core.flowstore import FlowRecord
         import time
+        if hasattr(self.ctx, "engagement"):
+            self.ctx.engagement.add_discovered(
+                [(f"{self.target.base()}{p}", s, l) for p, s, l in self._found])
         for path, status, length in self._found:
             url = f"{self.target.base()}{path}"
             fid = "disc-" + uuid.uuid4().hex[:10]

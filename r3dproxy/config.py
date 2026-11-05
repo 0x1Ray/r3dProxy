@@ -33,6 +33,8 @@ DEFAULTS = {
     "oast_base": "",
     # Passive auditing of proxy traffic
     "passive_enabled": True,
+    # Obsidian/notes export
+    "obsidian_vault": "",
 }
 
 

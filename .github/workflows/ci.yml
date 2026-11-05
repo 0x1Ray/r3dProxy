@@ -45,7 +45,7 @@ jobs:
           win = MainWindow(AppContext())
           tabs = [win.tabs.tabText(i) for i in range(win.tabs.count())]
           expected = {"Proxy", "Target", "Repeater", "Intruder", "Scanner",
-                      "Sequencer", "Issues", "Tools", "OAST", "AI Assistant"}
+                      "Sequencer", "Issues", "Recon", "Tools", "OAST", "AI Assistant"}
           assert expected.issubset(set(tabs)), (expected - set(tabs), tabs)
           from r3dproxy.core.plugins import get_plugins
           assert len(get_plugins()) >= 10

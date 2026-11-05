@@ -64,6 +64,15 @@ input or payload gets rejected.
 - **Content discovery** — brute-force hidden paths/files on a host with a
   wordlist and extension list, with soft-404 calibration; add found paths to the
   site map. Launched from the Target tab.
+- **Recon (external Linux tools)** — r3dProxy drives the standard tools instead
+  of reinventing them: **scanners** (nmap, nikto, nuclei, whatweb, wafw00f,
+  httpx, testssl, wpscan), **directory fuzzing** (ffuf, gobuster, feroxbuster,
+  dirb, wfuzz, dirsearch) and **subdomain discovery** (subfinder, amass,
+  assetfinder, findomain, sublist3r) — with live output, installed-tool
+  detection and a one-click installer (`scripts/install_tools.sh`).
+- **Engagement export (Obsidian)** — export everything gathered on a scoped
+  target — footprinting, recon tool runs, subdomains, site map and findings
+  (scanner + passive) — as linked Markdown notes into an Obsidian vault.
 - **Match & Replace** — regex rules auto-rewriting requests/responses.
 - **Scope** — restrict interception (and passive auditing) to chosen hosts.
 - **Extensible** — drop your own wordlists and scanner plugins into
@@ -179,6 +188,38 @@ copies it, exports a ready-to-import FoxyProxy config, and exports the CA cert.
 
 You can also point your OS network settings at `127.0.0.1:8080`, but a
 browser-scoped switcher keeps the rest of your machine off the proxy.
+
+## External recon tools
+
+The **Recon** tab runs real Linux security tools as subprocesses — it does not
+reimplement them. Click **Check tools** to see what's installed, or **Install
+tools…** to run the bundled setup script:
+
+```bash
+bash scripts/install_tools.sh            # apt + go + pip (apt needs sudo)
+bash scripts/install_tools.sh --nosudo   # go/pip only
+bash scripts/install_tools.sh --list     # show status
+```
+
+It installs what it can via `apt`, `go install` and `pipx`/`pip`; a few tools
+(testssl.sh, findomain, wpscan) have manual one-liners printed at the end. Go
+tools land in `$(go env GOPATH)/bin`, so make sure that's on your `PATH`.
+
+## Engagement notes (Obsidian)
+
+Set a scope (Target tab → right-click a host → *Add to scope*), work the target,
+then toolbar **Export notes** writes a linked note set into an Obsidian vault:
+
+```
+<vault>/r3dProxy/<target>/
+  <target>.md    overview + index + hosts
+  Recon.md       subdomains, discovered content, tool-run output
+  Site map.md    hosts and paths
+  Findings.md    scanner findings + passive issues
+```
+
+Everything is plain Markdown with `[[wikilinks]]`, so it opens directly in
+Obsidian (or any Markdown editor).
 
 ## AI assistant setup
 

@@ -22,6 +22,7 @@ from .sequencer_tab import SequencerTab
 from .tools_tab import ToolsTab
 from .oast_tab import OASTTab
 from .issues_tab import IssuesTab
+from .recon_tab import ReconTab
 from .ai_tab import AITab
 from .settings_dialog import SettingsDialog
 
@@ -31,6 +32,8 @@ class AppContext:
         config_mod.ensure_dirs()
         self.config = config_mod.Config()
         self.store = FlowStore()
+        from ..core.engagement import EngagementStore
+        self.engagement = EngagementStore()
         self.engine = ProxyEngine(self.config, self.store)
 
 
@@ -52,6 +55,7 @@ class MainWindow(QMainWindow):
         self.sequencer_tab = SequencerTab(ctx, self)
         self.issues_tab = IssuesTab(ctx, self)
         self.tools_tab = ToolsTab(ctx, self)
+        self.recon_tab = ReconTab(ctx, self)
         self.oast_tab = OASTTab(ctx, self)
         self.ai_tab = AITab(ctx, self)
 
@@ -62,6 +66,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.scanner_tab, "Scanner")
         self.tabs.addTab(self.sequencer_tab, "Sequencer")
         self.tabs.addTab(self.issues_tab, "Issues")
+        self.tabs.addTab(self.recon_tab, "Recon")
         self.tabs.addTab(self.tools_tab, "Tools")
         self.tabs.addTab(self.oast_tab, "OAST")
         self.tabs.addTab(self.ai_tab, "AI Assistant")
@@ -101,6 +106,11 @@ class MainWindow(QMainWindow):
         proxy_setup_btn = QPushButton("Proxy setup")
         proxy_setup_btn.clicked.connect(self.open_proxy_setup)
         tb.addWidget(proxy_setup_btn)
+
+        export_btn = QPushButton("Export notes")
+        export_btn.setToolTip("Export the engagement (recon → findings) as Obsidian Markdown notes")
+        export_btn.clicked.connect(self.export_notes)
+        tb.addWidget(export_btn)
 
         save_btn = QPushButton("Save session")
         save_btn.clicked.connect(self.save_session)
@@ -167,6 +177,31 @@ class MainWindow(QMainWindow):
     def open_proxy_setup(self):
         from .proxy_setup_dialog import ProxySetupDialog
         ProxySetupDialog(self.ctx, self).exec()
+
+    def export_notes(self):
+        from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox
+        from ..core import engagement as eng
+        scope = self.ctx.config.get("scope") or []
+        default_name = scope[0] if scope else ""
+        name, ok = QInputDialog.getText(self, "Export engagement",
+                                        "Target name (note folder):", text=default_name)
+        if not ok or not name.strip():
+            return
+        start_dir = self.ctx.config.get("obsidian_vault", "") or ""
+        vault = QFileDialog.getExistingDirectory(self, "Choose Obsidian vault / notes folder", start_dir)
+        if not vault:
+            return
+        self.ctx.config["obsidian_vault"] = vault
+        self.ctx.config.save()
+        try:
+            path = eng.export_vault(
+                vault, name.strip(), scope=scope, store=self.ctx.store,
+                findings=self.scanner_tab._findings, issues=[i for i, _ in self.issues_tab._issues],
+                engagement=self.ctx.engagement)
+            QMessageBox.information(self, "Exported", f"Engagement notes written to:\n{path}")
+            self.statusBar().showMessage(f"Exported notes → {path}", 6000)
+        except Exception as e:
+            QMessageBox.warning(self, "Export failed", str(e))
 
     # ---------------- session persistence ----------------
     def save_session(self):
