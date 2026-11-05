@@ -95,6 +95,11 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json({"enabled": bool(self.server.ctx.engine.intercept_enabled)})
         if path == "/issues":
             return self._json({"issues": list(getattr(self.server.ctx, "api_issues", []))})
+        if path == "/tools":
+            tools = [{"id": t.id, "name": t.name, "category": t.category,
+                      "installed": t.installed(), "install": t.install}
+                     for t in exttools.TOOLS]
+            return self._json({"tools": tools})
         if path == "/history":
             q = parse_qs(urlparse(self.path).query)
             limit = int((q.get("limit", ["50"])[0]))
@@ -206,8 +211,12 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json({"error": f"unknown tool {tool_id}"}, 400)
         if not tool.installed():
             return self._json({"error": f"{tool.name} not installed", "install": tool.install}, 400)
+        wordlist = body.get("wordlist", "")
+        if tool.category == exttools.FUZZER and not wordlist:
+            from . import wordlists as wl
+            wordlist = wl.materialize("builtin:paths-common")
         ctx = exttools.RunCtx(target=body.get("target", ""), domain=body.get("domain", ""),
-                              wordlist=body.get("wordlist", ""), extra=body.get("extra", ""))
+                              wordlist=wordlist, extra=body.get("extra", ""))
         argv = exttools.build(tool_id, ctx)
         try:
             out = subprocess.run(argv, capture_output=True, text=True,

@@ -162,8 +162,10 @@ dialog (or `python -m r3dproxy.cli token`).
 
 **On the current page you can:** add its host to scope · toggle intercept ·
 scan the page for **leaked secrets** · run a **passive** audit · pick a query
-parameter and **active-scan** it · enumerate **subdomains**. Results show right
-in the popup. The r3dProxy app (or `serve`) must be running.
+parameter and **active-scan** it · enumerate **subdomains** · **fuzz
+directories** (ffuf/gobuster) · view the **live passive issues** collected as you
+browse. The popup auto-picks an installed tool per category. The r3dProxy app
+(or `serve`) must be running.
 
 ## ⌨ Headless mode & CLI
 
@@ -184,7 +186,8 @@ python -m r3dproxy.cli token               # the control-API token
 
 The **control API** (token-authed, bound to `127.0.0.1`) is what the extension
 and your own scripts call: `GET /health`, `/scope`, `/intercept`, `/history`,
-`/issues`; `POST /secrets`, `/passive`, `/scan`, `/run`, `/scope`, `/intercept`.
+`/issues`, `/tools`; `POST /secrets`, `/passive`, `/scan`, `/run`, `/scope`,
+`/intercept`.
 All non-`/health` calls require the `X-r3d-Token` header.
 
 ## 🗂 Engagement notes (Obsidian)

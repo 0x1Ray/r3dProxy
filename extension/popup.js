@@ -28,6 +28,19 @@ function rows(items, fmt) {
 }
 
 let currentTab = null;
+let toolsCache = null;
+
+async function pickTool(category) {
+  if (!toolsCache) { toolsCache = (await api("/tools")).tools; }
+  const inList = toolsCache.filter((t) => t.category === category);
+  const t = inList.find((t) => t.installed);
+  if (!t) {
+    const hint = inList[0] ? inList[0].install : "see README";
+    out(`No ${esc(category)} tool installed.\nInstall one, e.g.:\n${esc(hint)}\n\nor run: bash scripts/install_tools.sh`);
+    return null;
+  }
+  return t;
+}
 
 async function init() {
   // status
@@ -89,11 +102,24 @@ const actions = {
   async subs() {
     const host = new URL(currentTab.url).host;
     const domain = host.split(".").slice(-2).join(".");
-    out(`running subfinder on ${esc(domain)}… (needs subfinder installed)`);
-    try {
-      const r = await api("/run", "POST", { tool: "subfinder", domain, timeout: 90 });
-      out(`<b>Subdomains (${esc(domain)})</b>\n` + esc(r.output || "(none)"));
-    } catch (e) { out("error: " + esc(e.message)); }
+    const tool = await pickTool("subdomain");
+    if (!tool) return;
+    out(`running ${esc(tool.name)} on ${esc(domain)}…`);
+    const r = await api("/run", "POST", { tool: tool.id, domain, timeout: 120 });
+    out(`<b>Subdomains (${esc(domain)})</b>\n` + esc(r.output || "(none)"));
+  },
+  async fuzz() {
+    const origin = new URL(currentTab.url).origin;
+    const tool = await pickTool("fuzzer");
+    if (!tool) return;
+    out(`fuzzing ${esc(origin)} with ${esc(tool.name)} (paths-common)…`);
+    const r = await api("/run", "POST", { tool: tool.id, target: origin, timeout: 120 });
+    out(`<b>Directory fuzz (${esc(tool.name)})</b>\n` + esc(r.output || "(no hits)"));
+  },
+  async issues() {
+    const r = await api("/issues");
+    out(`<b>Passive issues (${r.issues.length}) — live from browsing</b>\n` + rows(r.issues, (i) =>
+      `<span class="${esc(i.severity)}">[${esc(i.severity)}]</span> ${esc(i.name)} <span class="muted">${esc(new URL(i.url).host)}</span>`));
   },
   scan() {
     const u = new URL(currentTab.url);
