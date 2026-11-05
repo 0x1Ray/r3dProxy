@@ -71,6 +71,40 @@ def jwt_decode(s: str) -> str:
     return "\n\n".join(out)
 
 
+def pretty_json(s: str) -> str:
+    try:
+        return json.dumps(json.loads(s), indent=2, ensure_ascii=False)
+    except Exception as e:
+        return f"[not valid JSON: {e}]"
+
+
+def pretty_xml(s: str) -> str:
+    import xml.dom.minidom as minidom
+    try:
+        return minidom.parseString(s.strip()).toprettyxml(indent="  ").strip()
+    except Exception as e:
+        return f"[not valid XML: {e}]"
+
+
+def pretty_auto(text: str) -> str:
+    """Pretty-print JSON or XML, auto-detected. Falls back to the input."""
+    t = (text or "").strip()
+    if not t:
+        return text
+    if t[0] in "{[":
+        try:
+            return json.dumps(json.loads(t), indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+    if t.startswith("<"):
+        try:
+            import xml.dom.minidom as minidom
+            return minidom.parseString(t).toprettyxml(indent="  ").strip()
+        except Exception:
+            pass
+    return text
+
+
 OPERATIONS = {
     "URL encode": url_encode,
     "URL decode": url_decode,
@@ -81,6 +115,8 @@ OPERATIONS = {
     "HTML encode": html_encode,
     "HTML decode": html_decode,
     "JWT decode": jwt_decode,
+    "Pretty JSON": pretty_json,
+    "Pretty XML": pretty_xml,
 }
 
 

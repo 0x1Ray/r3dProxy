@@ -55,3 +55,27 @@ class HttpEditor(QPlainTextEdit):
 
     def text(self) -> str:
         return self.toPlainText()
+
+    def contextMenuEvent(self, event):
+        menu = self.createStandardContextMenu()
+        menu.addSeparator()
+        act = menu.addAction("Pretty-print body")
+        act.triggered.connect(self._pretty_body)
+        menu.exec(event.globalPos())
+
+    def _pretty_body(self):
+        from ..core import codec
+        text = self.toPlainText()
+        sep = "\r\n\r\n" if "\r\n\r\n" in text else ("\n\n" if "\n\n" in text else None)
+        if sep:
+            head, body = text.split(sep, 1)
+            pretty = codec.pretty_auto(body)
+            new = head + sep + pretty
+        else:
+            new = codec.pretty_auto(text)
+        ro = self.isReadOnly()
+        if ro:
+            self.setReadOnly(False)
+        self.setPlainText(new)
+        if ro:
+            self.setReadOnly(True)

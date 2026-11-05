@@ -20,8 +20,9 @@ input or payload gets rejected.
 - **Intercepting proxy** (HTTP + HTTPS via an auto-generated CA).
 - **Intercept queue** — pause requests, edit them freely, then Forward / Drop /
   Forward-all.
-- **HTTP history** — searchable table with request/response viewers, colored
-  status codes, right-click → send to Repeater / Intruder / Scanner / AI.
+- **HTTP history** — searchable table (plus **deep** regex search across full
+  request+response bodies) with request/response viewers, colored status codes,
+  right-click → send to Repeater / Intruder / Scanner / Sequencer / AI / CSRF PoC.
 - **Repeater** — multi-tab; edit a request and resend it, inspect the response,
   one click to the AI assistant. Optional **raw-socket** mode.
 - **Intruder** — four attack types (sniper, battering ram, pitchfork, cluster
@@ -47,8 +48,10 @@ input or payload gets rejected.
 - **Sequencer** — estimate token randomness (session IDs, CSRF/reset tokens):
   paste tokens or capture one from repeated requests, and get per-position
   entropy, duplicate/sequence detection and a plain verdict.
-- **Tools** — Decoder/Encoder (URL, Base64, Hex, HTML, JWT) and a response
-  **Comparer** (coloured line diff).
+- **Tools** — Decoder/Encoder (URL, Base64, Hex, HTML, JWT, pretty JSON/XML), a
+  response **Comparer** (coloured line diff), and a **CSRF PoC generator**
+  (auto-submitting form or fetch PoC from any request). Right-click any editor →
+  *Pretty-print body*.
 - **OAST** — built-in out-of-band callback listener with token URLs to confirm
   blind SSRF/XXE/RCE; set a public base URL (VPS / interactsh) for internet
   callbacks. The Scanner uses it automatically (*use OAST*) to upgrade blind
@@ -76,6 +79,10 @@ input or payload gets rejected.
 | AI assistant | Intruder |
 |---|---|
 | ![AI assistant](docs/img/03-ai.png) | ![Intruder](docs/img/04-intruder.png) |
+
+| Target site map | Passive issues |
+|---|---|
+| ![Target site map](docs/img/05-target.png) | ![Issues](docs/img/06-issues.png) |
 
 ## Scanner — OWASP plugins
 

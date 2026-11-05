@@ -6,7 +6,7 @@ from PySide6.QtGui import QColor, QAction
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
                                QPushButton, QLabel, QTableWidget, QTableWidgetItem,
                                QHeaderView, QLineEdit, QGroupBox, QMenu, QAbstractItemView,
-                               QTabWidget)
+                               QTabWidget, QCheckBox)
 
 from . import theme
 from .editor import HttpEditor
@@ -120,11 +120,15 @@ class ProxyTab(QWidget):
 
         bar = QHBoxLayout()
         self.filter_edit = QLineEdit()
-        self.filter_edit.setPlaceholderText("filter (host/path/method substring)…")
-        self.filter_edit.textChanged.connect(self.apply_filter)
+        self.filter_edit.setPlaceholderText("search (host/path/method — or regex over req+resp with 'deep')…")
+        self.filter_edit.textChanged.connect(lambda: self.apply_filter())
+        self.deep_search = QCheckBox("deep")
+        self.deep_search.setToolTip("Regex search across full request + response bodies")
+        self.deep_search.toggled.connect(lambda: self.apply_filter())
         clear_btn = QPushButton("Clear history")
         clear_btn.clicked.connect(self.clear_history)
         bar.addWidget(self.filter_edit)
+        bar.addWidget(self.deep_search)
         bar.addWidget(clear_btn)
         v.addLayout(bar)
 
@@ -242,14 +246,29 @@ class ProxyTab(QWidget):
             self.req_view.set_text(rec.request_text)
             self.resp_view.set_text(rec.response_text)
 
-    def apply_filter(self, text):
-        text = (text or "").lower().strip()
+    def apply_filter(self, _=None):
+        import re
+        q = self.filter_edit.text().strip()
+        deep = self.deep_search.isChecked()
+        rx = None
+        if deep and q:
+            try:
+                rx = re.compile(q, re.I)
+            except re.error:
+                rx = None
         for fid, row in self.row_by_fid.items():
             rec = self.ctx.store.get(fid)
             if not rec:
                 continue
-            hay = f"{rec.method} {rec.host} {rec.url}".lower()
-            self.table.setRowHidden(row, bool(text) and text not in hay)
+            if not q:
+                hide = False
+            elif deep:
+                hay = f"{rec.method} {rec.url}\n{rec.request_text}\n{rec.response_text}"
+                hide = (rx.search(hay) is None) if rx else (q.lower() not in hay.lower())
+            else:
+                hay = f"{rec.method} {rec.host} {rec.url}".lower()
+                hide = q.lower() not in hay
+            self.table.setRowHidden(row, hide)
 
     def clear_history(self):
         self.table.setRowCount(0)
@@ -284,6 +303,7 @@ class ProxyTab(QWidget):
         a_scan = menu.addAction("Send to Scanner")
         a_seq = menu.addAction("Send to Sequencer")
         a_ai = menu.addAction("Send to AI Assistant")
+        a_csrf = menu.addAction("Generate CSRF PoC")
         menu.addSeparator()
         a_copyurl = menu.addAction("Copy URL")
         act = menu.exec(self.table.viewport().mapToGlobal(pos))
@@ -295,6 +315,8 @@ class ProxyTab(QWidget):
             self.main.send_to_scanner(rec)
         elif act == a_seq:
             self.main.send_to_sequencer(rec)
+        elif act == a_csrf:
+            self.main.send_to_csrf(rec)
         elif act == a_ai:
             self.main.send_to_ai(rec.request_text, rec.response_text)
         elif act == a_copyurl:

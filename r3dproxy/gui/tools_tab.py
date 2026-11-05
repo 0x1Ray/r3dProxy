@@ -79,6 +79,54 @@ class ComparerWidget(QWidget):
         self.result.setHtml(header + "<br>".join(html))
 
 
+class CSRFWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        v = QVBoxLayout(self)
+        v.addWidget(QLabel("Paste a request; set the full URL; generate an HTML CSRF PoC."))
+        from PySide6.QtWidgets import QLineEdit
+        self.url = QLineEdit(); self.url.setPlaceholderText("https://target.com/path  (full URL the request hits)")
+        v.addWidget(self.url)
+        split = QSplitter(Qt.Horizontal)
+        self.req = HttpEditor(read_only=False)
+        self.out = HttpEditor(read_only=True)
+        split.addWidget(self.req); split.addWidget(self.out)
+        v.addWidget(split, 1)
+        bar = QHBoxLayout()
+        gen = QPushButton("Generate PoC"); gen.setObjectName("accent"); gen.clicked.connect(self.generate)
+        save = QPushButton("Save…"); save.clicked.connect(self.save)
+        bar.addStretch(1); bar.addWidget(save); bar.addWidget(gen)
+        v.addLayout(bar)
+
+    def load(self, request_text, url):
+        self.req.set_text(request_text); self.url.setText(url)
+
+    def generate(self):
+        from ..core import csrf
+        url = self.url.text().strip()
+        if not url:
+            # try to derive from Host header
+            from ..core.httptext import split_message
+            s, headers, _ = split_message(self.req.text())
+            host = next((v for k, v in headers if k.lower() == "host"), "")
+            target = s.split(" ")[1] if len(s.split(" ")) > 1 else "/"
+            url = f"https://{host}{target}" if host else target
+            self.url.setText(url)
+        self.out.set_text(csrf.build_poc(self.req.text(), url))
+
+    def save(self):
+        from PySide6.QtWidgets import QFileDialog
+        if not self.out.text().strip():
+            return
+        dest, _ = QFileDialog.getSaveFileName(self, "Save CSRF PoC", "csrf-poc.html", "HTML (*.html)")
+        if dest:
+            try:
+                with open(dest, "w", encoding="utf-8") as f:
+                    f.write(self.out.text())
+            except Exception:
+                pass
+
+
 class ToolsTab(QWidget):
     def __init__(self, ctx, main):
         super().__init__()
@@ -88,6 +136,8 @@ class ToolsTab(QWidget):
         inner = QTabWidget()
         self.decoder = DecoderWidget()
         self.comparer = ComparerWidget()
+        self.csrf = CSRFWidget()
         inner.addTab(self.decoder, "Decoder / Encoder")
         inner.addTab(self.comparer, "Comparer")
+        inner.addTab(self.csrf, "CSRF PoC")
         v.addWidget(inner)

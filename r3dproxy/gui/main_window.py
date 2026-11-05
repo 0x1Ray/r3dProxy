@@ -226,6 +226,10 @@ class MainWindow(QMainWindow):
         self.sequencer_tab.load(rec.request_text, tgt)
         self.tabs.setCurrentWidget(self.sequencer_tab)
 
+    def send_to_csrf(self, rec):
+        self.tools_tab.csrf.load(rec.request_text, rec.url)
+        self.tabs.setCurrentWidget(self.tools_tab)
+
     def send_to_ai(self, req_text, resp_text):
         self.ai_tab.load(req_text, resp_text)
         self.tabs.setCurrentWidget(self.ai_tab)
