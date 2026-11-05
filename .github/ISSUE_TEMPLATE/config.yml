@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Usage question
+    url: https://github.com/0x1Ray/r3dProxy/discussions
+    about: Ask how to use r3dProxy or discuss ideas before filing an issue.

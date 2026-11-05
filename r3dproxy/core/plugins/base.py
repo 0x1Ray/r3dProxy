@@ -84,7 +84,8 @@ TIMING_THRESHOLD_MS = 4000  # min delta over baseline to call it
 
 class ScanEngine:
     def __init__(self, base_text: str, target: Target, *, timeout=20, verify=False,
-                 progress_cb: Optional[Callable] = None, stop_flag=None):
+                 progress_cb: Optional[Callable] = None, stop_flag=None,
+                 oast_base: Optional[str] = None):
         self.base_text = base_text
         self.target = target
         self.timeout = timeout
@@ -92,9 +93,32 @@ class ScanEngine:
         self.marker = MARKER
         self._progress_cb = progress_cb
         self._stop_flag = stop_flag
+        self.oast_base = (oast_base or "").rstrip("/") or None
         self.baseline: Optional[RawResp] = None
         self.control: Optional[RawResp] = None
         self.control_token = ""
+
+    # ---- OAST (out-of-band) helpers ----
+    def oast_available(self) -> bool:
+        return bool(self.oast_base)
+
+    def oast_probe(self):
+        """Return (token, callback_url) for embedding in a payload."""
+        from ..oast_registry import new_token
+        token = new_token()
+        return token, f"{self.oast_base}/{token}"
+
+    def oast_confirmed(self, token: str, wait: float = 6.0) -> bool:
+        import time as _t
+        from ..oast_registry import seen
+        deadline = _t.time() + wait
+        while _t.time() < deadline:
+            if seen(token):
+                return True
+            if self.stopped():
+                return False
+            _t.sleep(0.4)
+        return bool(seen(token))
 
     def prepare(self):
         _p, seed, _s = split_marker(self.base_text)

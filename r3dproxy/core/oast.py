@@ -17,6 +17,8 @@ import uuid
 
 from PySide6.QtCore import QObject, Signal
 
+from . import oast_registry
+
 
 class OASTBridge(QObject):
     hit = Signal(dict)          # {time, src, method, path, token, headers, ua}
@@ -44,6 +46,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             "ua": self.headers.get("User-Agent", ""),
             "headers": {k: v for k, v in self.headers.items()},
         }
+        oast_registry.record(info)
         if _Handler.bridge:
             _Handler.bridge.hit.emit(info)
         body = b"r3dproxy-oast-ok\n"
@@ -109,4 +112,4 @@ class OASTListener:
 
     @staticmethod
     def new_token() -> str:
-        return "r3d" + uuid.uuid4().hex[:12]
+        return oast_registry.new_token()

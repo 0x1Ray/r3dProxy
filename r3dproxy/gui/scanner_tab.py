@@ -23,12 +23,13 @@ class ScanWorker(QThread):
     progress = Signal(str)
     done = Signal()
 
-    def __init__(self, base_text, target, plugins, timeout):
+    def __init__(self, base_text, target, plugins, timeout, oast_base=None):
         super().__init__()
         self.base_text = base_text
         self.target = target
         self.plugins = plugins
         self.timeout = timeout
+        self.oast_base = oast_base
         self._stop = False
 
     def stop(self):
@@ -42,7 +43,8 @@ class ScanWorker(QThread):
             try:
                 engine = ScanEngine(self.base_text, self.target, timeout=self.timeout,
                                     progress_cb=lambda label, resp: self.progress.emit(f"   {label} → {resp.status if resp.ok else resp.error}"),
-                                    stop_flag=lambda: self._stop)
+                                    stop_flag=lambda: self._stop,
+                                    oast_base=self.oast_base)
                 engine.prepare()
                 for f in plugin.run(engine):
                     self.finding.emit(f)
@@ -92,9 +94,13 @@ class ScannerTab(QWidget):
         selbar = QHBoxLayout()
         self.select_all = QCheckBox("select all"); self.select_all.setChecked(True)
         self.select_all.toggled.connect(self._toggle_all)
+        self.use_oast = QCheckBox("use OAST")
+        self.use_oast.setChecked(True)
+        self.use_oast.setToolTip("Confirm blind SSRF/XXE/RCE via the OAST listener (start it in the OAST tab)")
         reload_btn = QPushButton("⟳ reload"); reload_btn.setMaximumWidth(80)
         reload_btn.clicked.connect(self.reload_plugins)
-        selbar.addWidget(self.select_all); selbar.addStretch(1); selbar.addWidget(reload_btn)
+        selbar.addWidget(self.select_all); selbar.addWidget(self.use_oast)
+        selbar.addStretch(1); selbar.addWidget(reload_btn)
         pv.addLayout(selbar)
         self.plugin_list = QListWidget()
         pv.addWidget(self.plugin_list)
@@ -199,12 +205,26 @@ class ScannerTab(QWidget):
         self.log.clear()
         self.req_view.set_text(""); self.resp_view.set_text("")
         self.scan_btn.setEnabled(False); self.stop_btn.setEnabled(True)
-        self.status.setText("scanning…")
-        self.worker = ScanWorker(base, tgt, plugins, self.ctx.config["sender_timeout"])
+        oast_base = self._resolve_oast_base() if self.use_oast.isChecked() else None
+        self.status.setText("scanning…" + (f"  (OAST: {oast_base})" if oast_base else ""))
+        self.worker = ScanWorker(base, tgt, plugins, self.ctx.config["sender_timeout"], oast_base)
         self.worker.finding.connect(self.on_finding)
         self.worker.progress.connect(self.on_progress)
         self.worker.done.connect(self.on_done)
         self.worker.start()
+
+    def _resolve_oast_base(self):
+        """Prefer a configured public base URL; else the running local listener."""
+        base = (self.ctx.config.get("oast_base", "") or "").strip()
+        if base:
+            return base.rstrip("/")
+        ot = getattr(self.main, "oast_tab", None)
+        if ot and ot.listener.running:
+            host = ot.host.text().strip() or "127.0.0.1"
+            if host == "0.0.0.0":
+                host = "127.0.0.1"
+            return f"http://{host}:{ot.port.value()}"
+        return None
 
     def stop(self):
         if self.worker:

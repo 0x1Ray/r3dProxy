@@ -37,8 +37,9 @@ input or payload gets rejected.
 - **Tools** — Decoder/Encoder (URL, Base64, Hex, HTML, JWT) and a response
   **Comparer** (coloured line diff).
 - **OAST** — built-in out-of-band callback listener with token URLs to confirm
-  blind SSRF/XXE/RCE/SQLi; set a public base URL (VPS / interactsh) for internet
-  callbacks.
+  blind SSRF/XXE/RCE; set a public base URL (VPS / interactsh) for internet
+  callbacks. The Scanner uses it automatically (*use OAST*) to upgrade blind
+  SSRF/XXE/command-injection findings to **Firm** when a callback arrives.
 - **Sessions** — save/restore HTTP history and Repeater tabs to JSON.
 - **Reports** — export Scanner findings to Markdown or JSON for write-ups.
 - **Match & Replace** — regex rules auto-rewriting requests/responses.
@@ -46,6 +47,16 @@ input or payload gets rejected.
 - **Extensible** — drop your own wordlists and scanner plugins into
   `~/.r3dproxy/`.
 - **Dark "hawk" theme.**
+
+## Screenshots
+
+| Proxy & history | Scanner (OWASP plugins) |
+|---|---|
+| ![Proxy and HTTP history](docs/img/01-proxy-history.png) | ![Scanner](docs/img/02-scanner.png) |
+
+| AI assistant | Intruder |
+|---|---|
+| ![AI assistant](docs/img/03-ai.png) | ![Intruder](docs/img/04-intruder.png) |
 
 ## Scanner — OWASP plugins
 
@@ -126,6 +137,21 @@ If the window fails to start with an `xcb` plugin error, install your distro's
      sudo update-ca-certificates
      ```
    - Or use **Settings → CA cert → Export** inside the app.
+
+## Browser setup (FoxyProxy)
+
+r3dProxy is a standard HTTP proxy, so any proxy switcher works — no custom
+browser extension needed. **FoxyProxy** (or Proxy SwitchyOmega) is the usual
+choice:
+
+1. Install FoxyProxy (Firefox or Chrome).
+2. Add a proxy: **Type** HTTP, **Host** `127.0.0.1`, **Port** `8080` (match your
+   listen port), name it `r3dProxy`.
+3. Toggle it on, browse the target, and watch **HTTP history** fill up.
+4. For HTTPS, install the CA once (see above).
+
+You can also point your OS network settings at `127.0.0.1:8080`, but a
+browser-scoped switcher keeps the rest of your machine off the proxy.
 
 ## AI assistant setup
 
