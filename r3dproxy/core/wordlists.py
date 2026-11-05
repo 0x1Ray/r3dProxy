@@ -93,6 +93,26 @@ BUILTIN: Dict[str, List[str]] = {
         "CONNECT", "PROPFIND", "MKCOL", "MOVE",
     ],
     "numbers-0-20": [str(i) for i in range(0, 21)],
+    "paths-common": [
+        "admin", "administrator", "login", "logout", "register", "signup",
+        "dashboard", "api", "api/v1", "api/v2", "graphql", "swagger",
+        "swagger-ui", "openapi.json", "api-docs", "config", "config.php",
+        "configuration", "settings", "setup", "install", "installer",
+        "backup", "backups", "bak", "old", "test", "tests", "dev", "staging",
+        "debug", "status", "health", "healthz", "metrics", "actuator",
+        "actuator/health", "server-status", "phpinfo.php", "info.php",
+        "robots.txt", "sitemap.xml", "security.txt", ".well-known/security.txt",
+        ".git", ".git/config", ".gitignore", ".env", ".env.local", ".svn",
+        ".htaccess", ".htpasswd", "web.config", "wp-admin", "wp-login.php",
+        "wp-config.php", "xmlrpc.php", "console", "shell", "cmd", "upload",
+        "uploads", "files", "file", "download", "downloads", "images", "img",
+        "assets", "static", "js", "css", "tmp", "temp", "logs", "log",
+        "private", "secret", "secrets", "internal", "hidden", "db", "database",
+        "sql", "dump.sql", "users", "user", "account", "accounts", "profile",
+        "search", "cart", "checkout", "order", "orders", "invoice", "payment",
+        "webhook", "webhooks", "callback", "oauth", "sso", "saml", "token",
+        "jwks.json", ".well-known/openid-configuration",
+    ],
 }
 
 

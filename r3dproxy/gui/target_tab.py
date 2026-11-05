@@ -22,10 +22,13 @@ class TargetTab(QWidget):
         v = QVBoxLayout(self)
         bar = QHBoxLayout()
         refresh = QPushButton("Refresh"); refresh.clicked.connect(self.rebuild)
+        discover = QPushButton("Content discovery"); discover.clicked.connect(self.discover_selected)
+        bar_discover = discover
         self.scope_only = QCheckBox("in-scope only"); self.scope_only.toggled.connect(self.rebuild)
         self.filter = QLineEdit(); self.filter.setPlaceholderText("filter host/path…")
         self.filter.textChanged.connect(self.rebuild)
-        bar.addWidget(refresh); bar.addWidget(self.scope_only); bar.addWidget(self.filter, 1)
+        bar.addWidget(refresh); bar.addWidget(discover)
+        bar.addWidget(self.scope_only); bar.addWidget(self.filter, 1)
         v.addLayout(bar)
 
         split = QSplitter(Qt.Horizontal)
@@ -145,6 +148,34 @@ class TargetTab(QWidget):
             self.main.send_to_intruder(rec)
         elif rec and act == a_ai:
             self.main.send_to_ai(rec.request_text, rec.response_text)
+
+    def _target_for_host(self, host):
+        from ..core.sender import Target
+        for rec in self.ctx.store.all():
+            if rec.host == host:
+                port = 443 if rec.scheme == "https" else 80
+                netloc = urlparse(rec.url).netloc
+                if ":" in netloc:
+                    try:
+                        port = int(netloc.rsplit(":", 1)[1])
+                    except Exception:
+                        pass
+                return Target(host, port, rec.scheme == "https")
+        return Target(host, 443, True)
+
+    def discover_selected(self):
+        items = self.tree.selectedItems()
+        host = None
+        if items:
+            host = (items[0].data(0, Qt.UserRole) or {}).get("host")
+        if not host:
+            from PySide6.QtWidgets import QInputDialog
+            host, ok = QInputDialog.getText(self, "Content discovery", "Host:")
+            if not ok or not host.strip():
+                return
+            host = host.strip()
+        from .discovery_dialog import ContentDiscoveryDialog
+        ContentDiscoveryDialog(self.ctx, self.main, self._target_for_host(host), parent=self).exec()
 
     def _toggle_scope(self, host):
         scope = list(self.ctx.config.get("scope") or [])

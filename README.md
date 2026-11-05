@@ -58,6 +58,9 @@ input or payload gets rejected.
 - **Target site map** — a host → path tree built from history, with request/
   response viewers and right-click **scope** control; send any node to
   Repeater/Scanner/Intruder/AI.
+- **Content discovery** — brute-force hidden paths/files on a host with a
+  wordlist and extension list, with soft-404 calibration; add found paths to the
+  site map. Launched from the Target tab.
 - **Match & Replace** — regex rules auto-rewriting requests/responses.
 - **Scope** — restrict interception (and passive auditing) to chosen hosts.
 - **Extensible** — drop your own wordlists and scanner plugins into
