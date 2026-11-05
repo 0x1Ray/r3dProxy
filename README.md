@@ -24,8 +24,10 @@ input or payload gets rejected.
   status codes, right-click → send to Repeater / Intruder / Scanner / AI.
 - **Repeater** — multi-tab; edit a request and resend it, inspect the response,
   one click to the AI assistant. Optional **raw-socket** mode.
-- **Intruder (sniper)** — mark one injection point with `§…§`, run a payload
-  list, and compare status/length/time per payload. Optional raw-socket mode.
+- **Intruder** — four attack types (sniper, battering ram, pitchfork, cluster
+  bomb) over one or more `§…§` positions, per-position payload sets, wordlists,
+  **grep-extract** (pull a regex match into a sortable column), and optional
+  raw-socket mode.
 - **Scanner (OWASP plugins)** — run one-vulnerability-per-plugin checks against a
   single request at a `§…§` point. Ten built-in plugins with PortSwigger-style
   payload variations and per-vuln detection tuned to cut false positives.
