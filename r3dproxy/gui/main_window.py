@@ -14,6 +14,7 @@ from ..core.proxy_engine import ProxyEngine
 from ..core.sender import Target
 from . import theme
 from .proxy_tab import ProxyTab
+from .target_tab import TargetTab
 from .repeater_tab import RepeaterTab
 from .intruder_tab import IntruderTab
 from .scanner_tab import ScannerTab
@@ -43,6 +44,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.tabs)
 
         self.proxy_tab = ProxyTab(ctx, self)
+        self.target_tab = TargetTab(ctx, self)
         self.repeater_tab = RepeaterTab(ctx, self)
         self.intruder_tab = IntruderTab(ctx, self)
         self.scanner_tab = ScannerTab(ctx, self)
@@ -52,6 +54,7 @@ class MainWindow(QMainWindow):
         self.ai_tab = AITab(ctx, self)
 
         self.tabs.addTab(self.proxy_tab, "Proxy")
+        self.tabs.addTab(self.target_tab, "Target")
         self.tabs.addTab(self.repeater_tab, "Repeater")
         self.tabs.addTab(self.intruder_tab, "Intruder")
         self.tabs.addTab(self.scanner_tab, "Scanner")
@@ -62,6 +65,7 @@ class MainWindow(QMainWindow):
 
         self._build_toolbar()
         self._wire_engine()
+        self.tabs.currentChanged.connect(self._on_tab_changed)
         self.statusBar().showMessage("Ready")
 
         if self.ctx.config["intercept_enabled"]:
@@ -139,6 +143,10 @@ class MainWindow(QMainWindow):
     def on_stopped(self):
         self.proxy_status.setText("  ● proxy: stopped  ")
         self.proxy_status.setStyleSheet(f"color:{theme.FG_DIM};")
+
+    def _on_tab_changed(self, idx):
+        if self.tabs.widget(idx) is self.target_tab:
+            self.target_tab.rebuild()
 
     def _on_response_for_issues(self, fid):
         rec = self.ctx.store.get(fid)

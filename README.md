@@ -52,8 +52,11 @@ input or payload gets rejected.
   SSRF/XXE/command-injection findings to **Firm** when a callback arrives.
 - **Sessions** — save/restore HTTP history and Repeater tabs to JSON.
 - **Reports** — export Scanner findings to Markdown or JSON for write-ups.
+- **Target site map** — a host → path tree built from history, with request/
+  response viewers and right-click **scope** control; send any node to
+  Repeater/Scanner/Intruder/AI.
 - **Match & Replace** — regex rules auto-rewriting requests/responses.
-- **Scope** — restrict interception to chosen hosts.
+- **Scope** — restrict interception (and passive auditing) to chosen hosts.
 - **Extensible** — drop your own wordlists and scanner plugins into
   `~/.r3dproxy/`.
 - **Dark "hawk" theme.**
