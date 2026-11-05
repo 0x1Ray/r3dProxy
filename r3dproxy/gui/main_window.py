@@ -88,6 +88,10 @@ class MainWindow(QMainWindow):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         tb.addWidget(spacer)
 
+        proxy_setup_btn = QPushButton("Proxy setup")
+        proxy_setup_btn.clicked.connect(self.open_proxy_setup)
+        tb.addWidget(proxy_setup_btn)
+
         save_btn = QPushButton("Save session")
         save_btn.clicked.connect(self.save_session)
         load_btn = QPushButton("Load session")
@@ -139,6 +143,10 @@ class MainWindow(QMainWindow):
     def open_settings(self):
         dlg = SettingsDialog(self.ctx, self)
         dlg.exec()
+
+    def open_proxy_setup(self):
+        from .proxy_setup_dialog import ProxySetupDialog
+        ProxySetupDialog(self.ctx, self).exec()
 
     # ---------------- session persistence ----------------
     def save_session(self):

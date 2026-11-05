@@ -142,11 +142,12 @@ If the window fails to start with an `xcb` plugin error, install your distro's
 
 r3dProxy is a standard HTTP proxy, so any proxy switcher works — no custom
 browser extension needed. **FoxyProxy** (or Proxy SwitchyOmega) is the usual
-choice:
+choice. The toolbar's **Proxy setup** button shows the exact address to use,
+copies it, exports a ready-to-import FoxyProxy config, and exports the CA cert.
 
 1. Install FoxyProxy (Firefox or Chrome).
 2. Add a proxy: **Type** HTTP, **Host** `127.0.0.1`, **Port** `8080` (match your
-   listen port), name it `r3dProxy`.
+   listen port), name it `r3dProxy` — or import the config from *Proxy setup*.
 3. Toggle it on, browse the target, and watch **HTTP history** fill up.
 4. For HTTPS, install the CA once (see above).
 
