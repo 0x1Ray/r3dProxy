@@ -1,5 +1,9 @@
 # r3dProxy
 
+[![CI](https://github.com/0x1Ray/r3dProxy/actions/workflows/ci.yml/badge.svg)](https://github.com/0x1Ray/r3dProxy/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-e11d2a.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+
 An AI-assisted intercepting web proxy with a GUI — a lightweight, hackable
 alternative to Burp Suite for **authorized** web application security testing
 (bug bounty / pentests you have permission to run).
