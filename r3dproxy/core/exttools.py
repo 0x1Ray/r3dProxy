@@ -45,16 +45,39 @@ def _split_extra(ctx: RunCtx):
     return shlex.split(ctx.extra) if ctx.extra.strip() else []
 
 
+def target_host(t: str) -> str:
+    """Bare hostname/IP from a host, host:port, or full URL (for nmap/testssl)."""
+    from urllib.parse import urlparse
+    t = (t or "").strip()
+    netloc = urlparse(t).netloc if "://" in t else t.split("/")[0]
+    netloc = netloc.split("@")[-1]          # strip creds
+    if netloc.startswith("["):              # IPv6 literal [::1]:80
+        return netloc[1:].split("]")[0]
+    return netloc.split(":")[0]             # strip port
+
+
+def target_url(t: str) -> str:
+    """scheme://host[:port] origin from a host or URL (for nikto/nuclei/… )."""
+    from urllib.parse import urlparse
+    t = (t or "").strip()
+    if "://" in t:
+        p = urlparse(t)
+        return f"{p.scheme}://{p.netloc}"
+    host = t.split("/")[0]
+    return "https://" + host
+
+
 # ---------------- scanners (active / passive) ----------------
-def _nmap(c):      return ["nmap", "-sV", "-T4", c.target, *_split_extra(c)]
-def _nikto(c):     return ["nikto", "-h", c.target, *_split_extra(c)]
-def _nuclei(c):    return ["nuclei", "-u", c.target, "-nc", *_split_extra(c)]
-def _whatweb(c):   return ["whatweb", "--color=never", c.target, *_split_extra(c)]
-def _wafw00f(c):   return ["wafw00f", c.target, *_split_extra(c)]
-def _testssl(c):   return ["testssl.sh", "--color", "0", c.target, *_split_extra(c)]
-def _httpx(c):     return ["httpx", "-u", c.target, "-nc", "-title", "-status-code", "-tech-detect", *_split_extra(c)]
-def _wpscan(c):    return ["wpscan", "--url", c.target, "--no-banner", *_split_extra(c)]
-def _nmapvuln(c):  return ["nmap", "-sV", "--script", "vuln", "-T4", c.target, *_split_extra(c)]
+# host-based tools get a bare hostname; url-based tools get a scheme://host origin
+def _nmap(c):      return ["nmap", "-sV", "-T4", target_host(c.target), *_split_extra(c)]
+def _nikto(c):     return ["nikto", "-h", target_url(c.target), *_split_extra(c)]
+def _nuclei(c):    return ["nuclei", "-u", target_url(c.target), "-nc", *_split_extra(c)]
+def _whatweb(c):   return ["whatweb", "--color=never", target_url(c.target), *_split_extra(c)]
+def _wafw00f(c):   return ["wafw00f", target_url(c.target), *_split_extra(c)]
+def _testssl(c):   return ["testssl.sh", "--color", "0", target_host(c.target), *_split_extra(c)]
+def _httpx(c):     return ["httpx", "-u", target_url(c.target), "-nc", "-title", "-status-code", "-tech-detect", *_split_extra(c)]
+def _wpscan(c):    return ["wpscan", "--url", target_url(c.target), "--no-banner", *_split_extra(c)]
+def _nmapvuln(c):  return ["nmap", "-sV", "--script", "vuln", "-T4", target_host(c.target), *_split_extra(c)]
 
 
 # ---------------- directory / content fuzzers ----------------
@@ -71,11 +94,11 @@ def _dirsearch(c): return ["dirsearch", "-u", c.target, *(["-w", c.wordlist] if 
 
 
 # ---------------- subdomain discovery ----------------
-def _subfinder(c):   return ["subfinder", "-d", c.domain, "-silent", *_split_extra(c)]
-def _assetfinder(c): return ["assetfinder", "--subs-only", c.domain, *_split_extra(c)]
-def _amass(c):       return ["amass", "enum", "-passive", "-d", c.domain, *_split_extra(c)]
-def _findomain(c):   return ["findomain", "-t", c.domain, "-q", *_split_extra(c)]
-def _sublist3r(c):   return ["sublist3r", "-d", c.domain, *_split_extra(c)]
+def _subfinder(c):   return ["subfinder", "-d", target_host(c.domain), "-silent", *_split_extra(c)]
+def _assetfinder(c): return ["assetfinder", "--subs-only", target_host(c.domain), *_split_extra(c)]
+def _amass(c):       return ["amass", "enum", "-passive", "-d", target_host(c.domain), *_split_extra(c)]
+def _findomain(c):   return ["findomain", "-t", target_host(c.domain), "-q", *_split_extra(c)]
+def _sublist3r(c):   return ["sublist3r", "-d", target_host(c.domain), *_split_extra(c)]
 
 
 TOOLS: List[Tool] = [
