@@ -44,6 +44,14 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.ctx = ctx
         self.setWindowTitle(f"{APP_NAME} v{__version__}")
+        try:
+            from pathlib import Path
+            from PySide6.QtGui import QIcon
+            _ic = Path(__file__).parent / "assets" / "icon.png"
+            if _ic.exists():
+                self.setWindowIcon(QIcon(str(_ic)))
+        except Exception:
+            pass
         self.resize(1320, 860)
 
         self.tabs = QTabWidget()
@@ -309,10 +317,39 @@ class MainWindow(QMainWindow):
         super().closeEvent(ev)
 
 
+def _install_excepthook():
+    """Log uncaught exceptions to ~/.r3dproxy/crash.log and keep the app alive
+    instead of letting a single slot error tear the window down."""
+    import traceback
+    import time as _t
+    from .. import config as cfgmod
+
+    def hook(exc_type, exc, tb):
+        try:
+            cfgmod.ensure_dirs()
+            with open(cfgmod.CONFIG_DIR / "crash.log", "a", encoding="utf-8") as f:
+                f.write(f"\n=== {_t.strftime('%Y-%m-%d %H:%M:%S')} ===\n")
+                traceback.print_exception(exc_type, exc, tb, file=f)
+        except Exception:
+            pass
+        traceback.print_exception(exc_type, exc, tb)   # still print to stderr
+
+    sys.excepthook = hook
+
+
 def main():
+    _install_excepthook()
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     app.setStyleSheet(theme.STYLESHEET)
+    try:
+        from pathlib import Path
+        from PySide6.QtGui import QIcon
+        icon = Path(__file__).parent / "assets" / "icon.png"
+        if icon.exists():
+            app.setWindowIcon(QIcon(str(icon)))
+    except Exception:
+        pass
     pal = app.palette()
     pal.setColor(QPalette.Window, QColor(theme.BG))
     pal.setColor(QPalette.Base, QColor(theme.BG2))

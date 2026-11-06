@@ -82,6 +82,15 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        try:
+            self._do_GET()
+        except Exception as e:
+            try:
+                self._json({"error": str(e)}, 500)
+            except Exception:
+                pass
+
+    def _do_GET(self):
         path = urlparse(self.path).path
         if path == "/health":
             eng = self.server.ctx.engine
@@ -103,9 +112,9 @@ class _Handler(BaseHTTPRequestHandler):
         if path == "/history":
             q = parse_qs(urlparse(self.path).query)
             limit = int((q.get("limit", ["50"])[0]))
+            snapshot = list(self.server.ctx.store.all())[-limit:]
             rows = [{"method": r.method, "host": r.host, "url": r.url,
-                     "status": r.status, "length": r.length}
-                    for r in self.server.ctx.store.all()[-limit:]]
+                     "status": r.status, "length": r.length} for r in snapshot]
             return self._json({"history": rows})
         return self._json({"error": "not found"}, 404)
 

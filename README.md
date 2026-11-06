@@ -91,6 +91,15 @@ python run.py
 If the window fails to start with an `xcb` plugin error, install your distro's
 Qt deps (e.g. `sudo apt install libxcb-cursor0`).
 
+**Desktop launcher (icon in your app menu):**
+```bash
+bash scripts/install_desktop.sh      # adds r3dProxy + icon to the menu
+```
+
+**Troubleshooting:** run `python run.py` from a terminal to see errors live;
+uncaught errors are also logged to `~/.r3dproxy/crash.log`, and launcher output
+to `~/.r3dproxy/run.log`.
+
 ## 🤖 AI assistant (required)
 
 The AI assistant powers response analysis and payload generation. It runs
